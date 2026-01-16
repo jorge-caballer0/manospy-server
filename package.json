@@ -1,0 +1,18 @@
+{
+  "name": "manospy-sync-server",
+  "version": "1.0.0",
+  "description": "Backend para ManosPy y AdminManosPy",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sequelize": "^6.32.1",
+    "pg": "^8.11.1",
+    "pg-hstore": "^2.3.4",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.1",
+    "cors": "^2.8.5"
+  }
+}
