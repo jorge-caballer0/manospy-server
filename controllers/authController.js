@@ -1,4 +1,4 @@
-const { User } = require('../models'); // importa tu modelo User de Sequelize
+const { User } = require('../models'); // importa tu modelo Sequelize
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -10,13 +10,14 @@ const registerClient = async (req, res) => {
     // Hashear contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crear usuario en la base de datos
+    // Crear cliente en la base de datos
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
       phoneNumber,
-      role: 'client'
+      role: 'client',
+      status: 'active'
     });
 
     // Generar token
@@ -26,7 +27,17 @@ const registerClient = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    res.status(200).json({ user, token });
+    res.status(200).json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        status: user.status
+      },
+      token
+    });
   } catch (error) {
     console.error("Error en registro de cliente:", error);
     res.status(500).json({ message: "Error en registro de cliente", error: error.message });
@@ -36,25 +47,65 @@ const registerClient = async (req, res) => {
 // Registro de profesional
 const registerProfessional = async (req, res) => {
   try {
-    const { name, email, password, oficio } = req.body;
+    const {
+      name,          // nombre completo
+      idNumber,      // número de cédula
+      email,
+      password,
+      phoneNumber,
+      services,      // servicios que ofrece
+      cities,        // ciudades de operación
+      documentUrl,   // documentos (PDFs o URLs)
+      idFrontUrl,    // foto cédula frente
+      idBackUrl,     // foto cédula dorso
+      certificates   // fotos o PDFs de certificados
+    } = req.body;
 
+    // Hashear contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Crear profesional en la base de datos
     const user = await User.create({
       name,
+      idNumber,
       email,
       password: hashedPassword,
-      oficio,
-      role: 'professional'
+      phoneNumber,
+      services,
+      cities,
+      documentUrl,
+      idFrontUrl,
+      idBackUrl,
+      certificates,
+      role: 'professional',
+      status: 'active'
     });
 
+    // Generar token
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-    res.status(200).json({ user, token });
+    res.status(200).json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        idNumber: user.idNumber,
+        services: user.services,
+        cities: user.cities,
+        documentUrl: user.documentUrl,
+        idFrontUrl: user.idFrontUrl,
+        idBackUrl: user.idBackUrl,
+        certificates: user.certificates,
+        role: user.role,
+        status: user.status
+      },
+      token
+    });
   } catch (error) {
     console.error("Error en registro de profesional:", error);
     res.status(500).json({ message: "Error en registro de profesional", error: error.message });
@@ -81,7 +132,17 @@ const login = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    res.status(200).json({ user, token });
+    res.status(200).json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        status: user.status
+      },
+      token
+    });
   } catch (error) {
     console.error("Error en login:", error);
     res.status(500).json({ message: "Error en login", error: error.message });
