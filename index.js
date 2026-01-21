@@ -31,7 +31,7 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 3000; // Render asigna PORT automáticamente
 
 sequelize
-  .sync({ alter: true }) // ajusta tablas sin borrar datos; usar { force: true } solo en desarrollo
+  .sync({ force: true }) // ajusta tablas sin borrar datos; usar { force: true } solo en desarrollo
   .then(() => {
     console.log("✅ Base de datos sincronizada correctamente");
     app.listen(PORT, () => {
@@ -41,3 +41,4 @@ sequelize
   .catch(err => {
     console.error("❌ Error al sincronizar base de datos:", err);
   });
+
