@@ -2,9 +2,11 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { sequelize } = require('./models'); // importamos conexión y modelos
+const { sequelize } = require('./models'); // conexión y modelos
 
 const app = express();
+
+// Middlewares
 app.use(express.json());
 app.use(cors());
 
@@ -26,14 +28,16 @@ app.get('/', (req, res) => {
 });
 
 // Iniciar servidor
-const PORT = process.env.PORT || 3000; // usa el puerto de Render, fallback local
-sequelize.sync().then(() => {
-  console.log("Base de datos sincronizada");
-  app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
-}).catch(err => {
-  console.error("Error al sincronizar base de datos:", err);
-});
+const PORT = process.env.PORT || 3000; // Render asigna PORT automáticamente
 
-
-
-
+sequelize
+  .sync({ alter: true }) // ajusta tablas sin borrar datos; usar { force: true } solo en desarrollo
+  .then(() => {
+    console.log("✅ Base de datos sincronizada correctamente");
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error("❌ Error al sincronizar base de datos:", err);
+  });
