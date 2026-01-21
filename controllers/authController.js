@@ -23,7 +23,7 @@ const registerClient = async (req, res) => {
     // Generar token
     const token = jwt.sign(
       { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'secret_manospy',
       { expiresIn: '1d' }
     );
 
@@ -64,7 +64,7 @@ const registerProfessional = async (req, res) => {
     // Hashear contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crear profesional en la base de datos
+    // Crear profesional en la base de datos (queda pendiente)
     const user = await User.create({
       name,
       idNumber,
@@ -84,7 +84,7 @@ const registerProfessional = async (req, res) => {
     // Generar token
     const token = jwt.sign(
       { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'secret_manospy',
       { expiresIn: '1d' }
     );
 
@@ -125,10 +125,15 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Contraseña incorrecta" });
 
+    // 🚨 Validación de estado para profesionales
+    if (user.role === 'professional' && user.status !== 'active') {
+      return res.status(403).json({ message: "Cuenta pendiente de validación por admin" });
+    }
+
     // Generar token
     const token = jwt.sign(
       { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'secret_manospy',
       { expiresIn: '1d' }
     );
 
@@ -150,4 +155,3 @@ const login = async (req, res) => {
 };
 
 module.exports = { registerClient, registerProfessional, login };
-
