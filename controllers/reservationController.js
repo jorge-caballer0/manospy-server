@@ -73,7 +73,14 @@ exports.getMessages = async (req, res) => {
       where: { reservationId: req.params.id },
       order: [['timestamp', 'ASC']]
     });
-    res.json(messages);
+
+    // Convertir timestamp a hora local Asunción al devolver
+    const formatted = messages.map(m => ({
+      ...m.toJSON(),
+      formattedTime: new Date(m.timestamp).toLocaleString("es-PY", { timeZone: "America/Asuncion" })
+    }));
+
+    res.json(formatted);
   } catch (e) {
     console.error("Error en getMessages:", e);
     res.status(500).json({ error: e.message });
@@ -85,16 +92,11 @@ exports.addMessage = async (req, res) => {
   try {
     const { senderId, content } = req.body;
 
-    // Generar timestamp en zona horaria Asunción (UTC-03:00)
-    const timestamp = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "America/Asuncion" })
-    );
-
     const msg = await Message.create({
       senderId,
       reservationId: req.params.id,
       content,
-      timestamp
+      timestamp: Date.now() // BIGINT válido
     });
 
     res.json(msg);
