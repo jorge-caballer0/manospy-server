@@ -27,11 +27,13 @@ app.get('/', (req, res) => {
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000; // usa el puerto de Render, fallback local
-sequelize.sync({ alter: true }).then(async () => {
+sequelize.sync().then(() => {
   console.log("Base de datos sincronizada");
   app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
 }).catch(err => {
   console.error("Error al sincronizar base de datos:", err);
 });
+
+
 
 
