@@ -41,7 +41,7 @@ const User = sequelize.define('User', {
   rejectionReason: { type: DataTypes.TEXT } // Motivo si el Admin lo rechaza
 });
 
-// Solicitudes de servicio
+// Solicitudes de servicioS
 const ServiceRequest = sequelize.define('ServiceRequest', {
   description: { type: DataTypes.TEXT },
   category: { type: DataTypes.STRING },
@@ -85,3 +85,4 @@ module.exports = {
   Reservation,
   Message
 };
+
