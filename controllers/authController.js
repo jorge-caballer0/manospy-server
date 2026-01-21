@@ -78,7 +78,7 @@ const registerProfessional = async (req, res) => {
       idBackUrl,
       certificates,
       role: 'professional',
-      status: 'active'
+      status: 'pending'
     });
 
     // Generar token
@@ -150,3 +150,4 @@ const login = async (req, res) => {
 };
 
 module.exports = { registerClient, registerProfessional, login };
+
