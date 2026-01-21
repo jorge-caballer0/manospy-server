@@ -1,4 +1,3 @@
-// models/index.js
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
@@ -58,9 +57,9 @@ const Reservation = sequelize.define('Reservation', {
 
 // Mensajes dentro de una reserva
 const Message = sequelize.define('Message', {
-  text: { type: DataTypes.TEXT },
-  senderId: { type: DataTypes.STRING },
-  timestamp: { type: DataTypes.BIGINT }
+  content: { type: DataTypes.TEXT, allowNull: false }, // ⚠️ corregido
+  senderId: { type: DataTypes.STRING, allowNull: false },
+  timestamp: { type: DataTypes.BIGINT, allowNull: false }
 });
 
 // --- RELACIONES ---
@@ -74,6 +73,7 @@ User.hasMany(Reservation, { as: 'clientReservations', foreignKey: 'clientId' });
 User.hasMany(Reservation, { as: 'profReservations', foreignKey: 'professionalId' });
 
 Reservation.hasMany(Message, { foreignKey: 'reservationId' });
+Message.belongsTo(Reservation, { foreignKey: 'reservationId' }); // relación inversa
 
 // --- EXPORTAR ---
 module.exports = {
