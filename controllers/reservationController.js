@@ -83,13 +83,18 @@ exports.getMessages = async (req, res) => {
 // Agregar mensaje al chat de una reserva
 exports.addMessage = async (req, res) => {
   try {
-    const { senderId, content } = req.body; // ⚠️ ahora usamos "content"
+    const { senderId, content } = req.body;
+
+    // Generar timestamp en zona horaria Asunción (UTC-03:00)
+    const timestamp = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Asuncion" })
+    );
 
     const msg = await Message.create({
       senderId,
       reservationId: req.params.id,
       content,
-      timestamp: new Date()
+      timestamp
     });
 
     res.json(msg);
