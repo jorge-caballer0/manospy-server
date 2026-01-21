@@ -13,6 +13,7 @@ exports.getReservations = async (req, res) => {
     });
     res.json(reservations);
   } catch (e) {
+    console.error("Error en getReservations:", e);
     res.status(500).json({ error: e.message });
   }
 };
@@ -32,6 +33,7 @@ exports.createReservation = async (req, res) => {
 
     res.status(201).json(reservation);
   } catch (e) {
+    console.error("Error en createReservation:", e);
     res.status(400).json({ error: e.message });
   }
 };
@@ -45,6 +47,7 @@ exports.acceptReservation = async (req, res) => {
     );
     res.json({ message: "Reserva aceptada" });
   } catch (e) {
+    console.error("Error en acceptReservation:", e);
     res.status(400).json({ error: e.message });
   }
 };
@@ -58,6 +61,7 @@ exports.rejectReservation = async (req, res) => {
     );
     res.json({ message: "Reserva rechazada" });
   } catch (e) {
+    console.error("Error en rejectReservation:", e);
     res.status(400).json({ error: e.message });
   }
 };
@@ -71,6 +75,7 @@ exports.getMessages = async (req, res) => {
     });
     res.json(messages);
   } catch (e) {
+    console.error("Error en getMessages:", e);
     res.status(500).json({ error: e.message });
   }
 };
@@ -78,9 +83,18 @@ exports.getMessages = async (req, res) => {
 // Agregar mensaje al chat de una reserva
 exports.addMessage = async (req, res) => {
   try {
-    const msg = await Message.create({ ...req.body, reservationId: req.params.id });
+    const { senderId, content } = req.body; // ⚠️ ahora usamos "content"
+
+    const msg = await Message.create({
+      senderId,
+      reservationId: req.params.id,
+      content,
+      timestamp: new Date()
+    });
+
     res.json(msg);
   } catch (e) {
+    console.error("Error en addMessage:", e);
     res.status(400).json({ error: e.message });
   }
 };
