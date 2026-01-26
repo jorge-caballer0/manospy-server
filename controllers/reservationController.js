@@ -1,4 +1,4 @@
-const { Reservation, ServiceRequest, User, Message } = require('../models');
+const { Reservation, ServiceRequest, User, Message, Review } = require('../models');
 
 // Obtener todas las reservas con info del cliente
 exports.getReservations = async (req, res) => {
@@ -103,6 +103,40 @@ exports.addMessage = async (req, res) => {
   } catch (e) {
     console.error("Error en addMessage:", e);
     res.status(400).json({ error: e.message });
+  }
+};
+
+// ✅ CORRECCIÓN 10: Calificar una reserva completada (crear Review)
+exports.rateReservation = async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const reservationId = req.params.id;
+    const clientId = req.user.id; // Del JWT
+
+    // Verificar que la reserva existe
+    const reservation = await Reservation.findByPk(reservationId);
+    if (!reservation) {
+      return res.status(404).json({ error: "Reserva no encontrada" });
+    }
+
+    // Verificar que esté completada
+    if (reservation.status !== 'completed') {
+      return res.status(400).json({ error: "Solo se pueden calificar reservas completadas" });
+    }
+
+    // Crear la calificación
+    const review = await Review.create({
+      rating,
+      comment,
+      clientId,
+      professionalId: reservation.professionalId,
+      reservationId
+    });
+
+    res.status(201).json(review);
+  } catch (e) {
+    console.error("Error en rateReservation:", e);
+    res.status(500).json({ error: e.message });
   }
 };
 
