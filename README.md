@@ -1,2 +1,2 @@
 # manospy-server
-servidor manospy
+servidor manospy2.0
