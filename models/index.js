@@ -62,6 +62,15 @@ const Message = sequelize.define('Message', {
   timestamp: { type: DataTypes.BIGINT, allowNull: false }
 });
 
+// ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
+const Review = sequelize.define('Review', {
+  rating: { type: DataTypes.INTEGER, allowNull: false, min: 1, max: 5 }, // 1-5 estrellas
+  comment: { type: DataTypes.TEXT },
+  clientId: { type: DataTypes.STRING, allowNull: false },
+  professionalId: { type: DataTypes.STRING, allowNull: false },
+  reservationId: { type: DataTypes.STRING, allowNull: false }
+});
+
 // --- RELACIONES ---
 User.hasMany(ServiceRequest, { as: 'requests', foreignKey: 'clientId' });
 ServiceRequest.belongsTo(User, { as: 'client', foreignKey: 'clientId' });
@@ -75,6 +84,14 @@ User.hasMany(Reservation, { as: 'profReservations', foreignKey: 'professionalId'
 Reservation.hasMany(Message, { foreignKey: 'reservationId' });
 Message.belongsTo(Reservation, { foreignKey: 'reservationId' }); // relación inversa
 
+// ✅ CORRECCIÓN 6: Relaciones para Reviews
+User.hasMany(Review, { as: 'reviewsAsClient', foreignKey: 'clientId' });
+User.hasMany(Review, { as: 'reviewsAsProf', foreignKey: 'professionalId' });
+Review.belongsTo(User, { as: 'client', foreignKey: 'clientId' });
+Review.belongsTo(User, { as: 'professional', foreignKey: 'professionalId' });
+Reservation.hasMany(Review, { foreignKey: 'reservationId' });
+Review.belongsTo(Reservation, { foreignKey: 'reservationId' });
+
 // --- EXPORTAR ---
 module.exports = {
   sequelize,
@@ -83,6 +100,7 @@ module.exports = {
   User,
   ServiceRequest,
   Reservation,
-  Message
+  Message,
+  Review  // ✅ CORRECCIÓN 6: Exportar modelo Review
 };
 
