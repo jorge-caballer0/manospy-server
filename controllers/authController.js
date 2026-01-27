@@ -109,10 +109,15 @@ const registerProfessional = async (req, res) => {
 // Login
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     const user = await User.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    // Validar que el role coincida (si se envía)
+    if (role && user.role !== role) {
+      return res.status(403).json({ message: `Usuario no es ${role}` });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: "Contraseña incorrecta" });
