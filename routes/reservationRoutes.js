@@ -7,6 +7,8 @@ const {
   acceptReservation,
   rejectReservation,
   getMessages,
+  getReservationsByUser,
+  getReservationById,
   addMessage,
   rateReservation  // ✅ CORRECCIÓN 9
 } = require('../controllers/reservationController');
