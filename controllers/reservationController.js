@@ -18,6 +18,42 @@ exports.getReservations = async (req, res) => {
   }
 };
 
+// Obtener reservas por usuario (cliente)
+exports.getReservationsByUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const reservations = await Reservation.findAll({
+      where: { clientId: userId },
+      include: [
+        { model: ServiceRequest },
+        { model: User, as: 'client', attributes: ['id', 'name', 'email'] }
+      ]
+    });
+    res.json(reservations);
+  } catch (e) {
+    console.error("Error en getReservationsByUser:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
+// Obtener detalle de reserva por id
+exports.getReservationById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const reservation = await Reservation.findByPk(id, {
+      include: [
+        { model: ServiceRequest },
+        { model: User, as: 'client', attributes: ['id', 'name', 'email'] }
+      ]
+    });
+    if (!reservation) return res.status(404).json({ error: 'Reserva no encontrada' });
+    res.json(reservation);
+  } catch (e) {
+    console.error("Error en getReservationById:", e);
+    res.status(500).json({ error: e.message });
+  }
+};
+
 // Crear nueva reserva (cuando un cliente solicita un servicio)
 exports.createReservation = async (req, res) => {
   try {
