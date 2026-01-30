@@ -16,8 +16,8 @@ const {
 // ✅ CORRECCIÓN 9: Rutas de reservas con autenticación
 router.get('/', authMiddleware, getReservations);
 
-// Obtener reservas por usuario (cliente)
-router.get('/user/:id', authMiddleware, getReservationsByUser);
+// Obtener reservas por usuario (cliente) - usa JWT
+router.get('/user', authMiddleware, getReservationsByUser);
 
 // Crear nueva reserva (cliente solicita servicio)
 router.post('/', authMiddleware, createReservation);
