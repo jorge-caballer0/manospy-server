@@ -18,12 +18,19 @@ exports.getReservations = async (req, res) => {
   }
 };
 
-// Obtener reservas por usuario (cliente)
+// Obtener reservas por usuario (cliente) - usa JWT
 exports.getReservationsByUser = async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.user.id; // Del JWT
+    const status = req.query.status; // Query param opcional
+
+    const whereClause = { clientId: userId };
+    if (status) {
+      whereClause.status = status; // Filtrar por status si se proporciona
+    }
+
     const reservations = await Reservation.findAll({
-      where: { clientId: userId },
+      where: whereClause,
       include: [
         { model: ServiceRequest },
         { model: User, as: 'client', attributes: ['id', 'name', 'email'] }
