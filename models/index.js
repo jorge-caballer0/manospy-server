@@ -26,6 +26,7 @@ const User = sequelize.define('User', {
   // Campos extendidos para profesionales
   phoneNumber: { type: DataTypes.STRING },
   idNumber: { type: DataTypes.STRING }, // Cédula
+  profilePhotoUrl: { type: DataTypes.STRING }, // Foto de perfil del profesional
   category: { type: DataTypes.STRING }, // Oficio principal
   bio: { type: DataTypes.TEXT },
   experience: { type: DataTypes.TEXT },
