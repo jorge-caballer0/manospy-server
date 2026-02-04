@@ -1,4 +1,4 @@
-const { User, Reservation } = require('../models');
+const { User, Reservation, ServiceCategory } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize'); // ⚠️ corregido
@@ -144,3 +144,112 @@ exports.blockUser = async (req, res) => {
     res.status(500).json({ message: "Error al bloquear usuario", error: error.message });
   }
 };
+
+// ✅ CATEGORÍAS - OBTENER TODAS
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await ServiceCategory.findAll({
+      order: [['name', 'ASC']]
+    });
+    res.json(categories);
+  } catch (error) {
+    console.error("Error en getCategories:", error);
+    res.status(500).json({ message: "Error al obtener categorías", error: error.message });
+  }
+};
+
+// ✅ CATEGORÍAS - CREAR
+exports.createCategory = async (req, res) => {
+  try {
+    const { name, description, icon } = req.body;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ error: "El nombre de la categoría es requerido" });
+    }
+
+    const existingCategory = await ServiceCategory.findOne({ where: { name } });
+    if (existingCategory) {
+      return res.status(409).json({ error: "La categoría ya existe" });
+    }
+
+    const category = await ServiceCategory.create({
+      name: name.trim(),
+      description: description || '',
+      icon: icon || 'default'
+    });
+
+    res.status(201).json(category);
+  } catch (error) {
+    console.error("Error en createCategory:", error);
+    res.status(500).json({ message: "Error al crear categoría", error: error.message });
+  }
+};
+
+// ✅ CATEGORÍAS - ACTUALIZAR
+exports.updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, icon } = req.body;
+
+    const category = await ServiceCategory.findByPk(id);
+    if (!category) {
+      return res.status(404).json({ error: "Categoría no encontrada" });
+    }
+
+    await category.update({
+      name: name || category.name,
+      description: description !== undefined ? description : category.description,
+      icon: icon || category.icon
+    });
+
+    res.json(category);
+  } catch (error) {
+    console.error("Error en updateCategory:", error);
+    res.status(500).json({ message: "Error al actualizar categoría", error: error.message });
+  }
+};
+
+// ✅ CATEGORÍAS - ELIMINAR
+exports.deleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const category = await ServiceCategory.findByPk(id);
+    if (!category) {
+      return res.status(404).json({ error: "Categoría no encontrada" });
+    }
+
+    await category.destroy();
+    res.json({ message: "Categoría eliminada exitosamente" });
+  } catch (error) {
+    console.error("Error en deleteCategory:", error);
+    res.status(500).json({ message: "Error al eliminar categoría", error: error.message });
+  }
+};
+
+// ✅ OBTENER DASHBOARD - ESTADÍSTICAS
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const totalClients = await User.count({ where: { role: 'client' } });
+    const totalProfessionals = await User.count({ where: { role: 'professional' } });
+    const pendingProfessionals = await User.count({ where: { role: 'professional', status: 'pending' } });
+    const approvedProfessionals = await User.count({ where: { role: 'professional', status: 'active' } });
+    const totalReservations = await Reservation.count();
+    const activeReservations = await Reservation.count({ where: { status: 'active' } });
+    const totalCategories = await ServiceCategory.count();
+
+    res.json({
+      totalClients,
+      totalProfessionals,
+      pendingProfessionals,
+      approvedProfessionals,
+      totalReservations,
+      activeReservations,
+      totalCategories
+    });
+  } catch (error) {
+    console.error("Error en getDashboardStats:", error);
+    res.status(500).json({ message: "Error al obtener estadísticas", error: error.message });
+  }
+};
+
