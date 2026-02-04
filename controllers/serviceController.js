@@ -69,3 +69,33 @@ exports.acceptService = async (req, res) => {
   }
 };
 
+// ✅ NUEVO: Cancelar solicitud de servicio
+exports.cancelService = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const clientId = req.user.id; // Del JWT decoded
+
+    const serviceRequest = await ServiceRequest.findByPk(id);
+    if (!serviceRequest) {
+      return res.status(404).json({ error: "Solicitud no encontrada" });
+    }
+
+    // Verificar que el cliente que creó la solicitud sea quien la cancela
+    if (serviceRequest.clientId !== clientId) {
+      return res.status(403).json({ error: "No tienes permiso para cancelar esta solicitud" });
+    }
+
+    // Solo se puede cancelar si está pendiente
+    if (serviceRequest.status !== 'pending') {
+      return res.status(400).json({ error: "Solo puedes cancelar solicitudes pendientes" });
+    }
+
+    // Eliminar la solicitud
+    await serviceRequest.destroy();
+
+    res.json({ message: "Solicitud cancelada exitosamente" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
