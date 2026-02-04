@@ -11,7 +11,12 @@ const {
   approveProfessional,
   rejectProfessional,
   getUsers,
-  blockUser
+  blockUser,
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getDashboardStats
 } = require('../controllers/adminController');
 
 // ✅ CORRECCIÓN 11: Agregar middlewares de autenticación y autorización admin
@@ -22,6 +27,9 @@ router.post('/login', adminLogin);
 // Resto de rutas requieren autenticación y rol admin
 // Estadísticas generales
 router.get('/stats', authMiddleware, adminMiddleware, getStats);
+
+// Dashboard completo con estadísticas
+router.get('/dashboard/stats', authMiddleware, adminMiddleware, getDashboardStats);
 
 // Profesionales pendientes de validación
 router.get('/professionals/pending', authMiddleware, adminMiddleware, getPendingPros);
@@ -37,5 +45,18 @@ router.get('/users', authMiddleware, adminMiddleware, getUsers);
 
 // Bloquear usuario (requiere ID numérico en la URL)
 router.post('/users/:id/block', authMiddleware, adminMiddleware, blockUser);
+
+// ✅ NUEVAS RUTAS DE CATEGORÍAS
+// Obtener todas las categorías
+router.get('/categories', authMiddleware, adminMiddleware, getCategories);
+
+// Crear categoría
+router.post('/categories', authMiddleware, adminMiddleware, createCategory);
+
+// Actualizar categoría
+router.put('/categories/:id', authMiddleware, adminMiddleware, updateCategory);
+
+// Eliminar categoría
+router.delete('/categories/:id', authMiddleware, adminMiddleware, deleteCategory);
 
 module.exports = router;
