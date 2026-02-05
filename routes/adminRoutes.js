@@ -12,6 +12,8 @@ const {
   rejectProfessional,
   getUsers,
   blockUser,
+  unblockUser,
+  getAllReservations,
   getCategories,
   createCategory,
   updateCategory,
@@ -45,6 +47,12 @@ router.get('/users', authMiddleware, adminMiddleware, getUsers);
 
 // Bloquear usuario (requiere ID numérico en la URL)
 router.post('/users/:id/block', authMiddleware, adminMiddleware, blockUser);
+
+// Desbloquear usuario (requiere ID numérico en la URL)
+router.post('/users/:id/unblock', authMiddleware, adminMiddleware, unblockUser);
+
+// Obtener todas las reservas
+router.get('/reservations', authMiddleware, adminMiddleware, getAllReservations);
 
 // ✅ NUEVAS RUTAS DE CATEGORÍAS
 // Obtener todas las categorías
