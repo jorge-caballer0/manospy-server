@@ -145,6 +145,31 @@ exports.blockUser = async (req, res) => {
   }
 };
 
+// Desbloquear usuario
+exports.unblockUser = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: "ID inválido. Debe ser un número entero." });
+    }
+
+    const [rows] = await User.update(
+      { status: 'active' },
+      { where: { id } }
+    );
+
+    if (rows === 0) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    const user = await User.findByPk(id);
+    res.json({ message: "Usuario desbloqueado", user });
+  } catch (error) {
+    console.error("Error en unblockUser:", error);
+    res.status(500).json({ message: "Error al desbloquear usuario", error: error.message });
+  }
+};
+
 // ✅ CATEGORÍAS - OBTENER TODAS
 exports.getCategories = async (req, res) => {
   try {
@@ -224,6 +249,42 @@ exports.deleteCategory = async (req, res) => {
   } catch (error) {
     console.error("Error en deleteCategory:", error);
     res.status(500).json({ message: "Error al eliminar categoría", error: error.message });
+  }
+};
+
+// ✅ OBTENER TODAS LAS RESERVAS
+exports.getAllReservations = async (req, res) => {
+  try {
+    const reservations = await Reservation.findAll({
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'name', 'email'],
+          as: 'client'
+        },
+        {
+          model: User,
+          attributes: ['id', 'name', 'email'],
+          as: 'professional'
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(reservations.map(r => ({
+      id: r.id,
+      clientId: r.clientId,
+      clientName: r.client?.name || 'Unknown',
+      professionalId: r.professionalId,
+      professionalName: r.professional?.name || 'Unknown',
+      status: r.status,
+      serviceId: r.serviceId,
+      description: r.description,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    })));
+  } catch (error) {
+    console.error("Error en getAllReservations:", error);
+    res.status(500).json({ message: "Error al obtener reservas", error: error.message });
   }
 };
 
