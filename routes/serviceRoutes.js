@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { getPendingRequests, createRequest, getServiceById, acceptService, cancelService } from '../controllers/serviceController.js';
+
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
-const { getPendingRequests, createRequest, getServiceById, acceptService, cancelService } = require('../controllers/serviceController');
 
 // ✅ CORRECCIÓN 7: Agregar rutas de servicios con autenticación
 router.get('/requests', authMiddleware, getPendingRequests);        // Obtener solicitudes pendientes
@@ -10,4 +11,4 @@ router.get('/requests/:id', authMiddleware, getServiceById);        // Obtener d
 router.post('/requests/:id/accept', authMiddleware, acceptService); // Aceptar solicitud de servicio
 router.delete('/requests/:id', authMiddleware, cancelService);      // Cancelar solicitud de servicio
 
-module.exports = router;
+export default router;
