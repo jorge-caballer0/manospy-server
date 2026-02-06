@@ -15,12 +15,17 @@ app.use(cors());
 // Servir archivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+
 // Importar rutas
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const soporteRoutes = require('./routes/soporteRoutes.js');
+const calificacionesRoutes = require('./routes/calificacionesRoutes.js');
+const direccionesRoutes = require('./routes/direccionesRoutes.js');
+
 
 // Usar rutas
 app.use('/auth', authRoutes);
@@ -28,6 +33,9 @@ app.use('/admin', adminRoutes);
 app.use('/services', serviceRoutes);
 app.use('/reservations', reservationRoutes);
 app.use('/upload', uploadRoutes);
+app.use('/soporte', soporteRoutes);
+app.use('/calificaciones', calificacionesRoutes);
+app.use('/direcciones', direccionesRoutes);
 
 // Ruta base
 app.get('/', (req, res) => {
