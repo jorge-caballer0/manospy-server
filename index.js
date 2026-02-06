@@ -1,9 +1,16 @@
 // index.js
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-require('dotenv').config();
-const { sequelize } = require('./models'); // conexión y modelos
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { sequelize } from './models/index.js'; // conexión y modelos
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 
@@ -15,17 +22,15 @@ app.use(cors());
 // Servir archivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-
-// Importar rutas
-const authRoutes = require('./routes/authRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const serviceRoutes = require('./routes/serviceRoutes');
-const reservationRoutes = require('./routes/reservationRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const soporteRoutes = require('./routes/soporteRoutes.js');
-const calificacionesRoutes = require('./routes/calificacionesRoutes.js');
-const direccionesRoutes = require('./routes/direccionesRoutes.js');
-
+// Importar rutas (todas deben ser default export)
+import authRoutes from './routes/authRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import serviceRoutes from './routes/serviceRoutes.js';
+import reservationRoutes from './routes/reservationRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import soporteRoutes from './routes/soporteRoutes.js';
+import calificacionesRoutes from './routes/calificacionesRoutes.js';
+import direccionesRoutes from './routes/direccionesRoutes.js';
 
 // Usar rutas
 app.use('/auth', authRoutes);
