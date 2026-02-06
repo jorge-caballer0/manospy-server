@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabaseClient';
+import { supabase } from '../config/config.js';
 
 // Calificaciones de soporte
 export async function rateSupport({ user_id, agent_id, rating, tags, comment }) {

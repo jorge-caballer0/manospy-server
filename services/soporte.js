@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabaseClient';
+import { supabase } from '../config/config.js';
 
 // CRUD para chat de soporte
 export async function sendSupportMessage({ user_id, agent_id, message, type }) {

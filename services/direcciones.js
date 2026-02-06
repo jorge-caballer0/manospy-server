@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabaseClient';
+import { supabase } from '../config/config.js';
 
 // CRUD para direcciones
 export async function addDireccion({ user_id, direccion, ciudad, estado, codigo_postal }) {
