@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase.js');
+import { supabase } from '../config/supabase.js';
 
 // CRUD para direcciones
 export async function addDireccion({ user_id, direccion, ciudad, estado, codigo_postal }) {

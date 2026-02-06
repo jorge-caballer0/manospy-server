@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase.js');
+import { supabase } from '../config/supabase.js';
 
 // Calificaciones de soporte
 export async function rateSupport({ user_id, agent_id, rating, tags, comment }) {
