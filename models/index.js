@@ -72,6 +72,22 @@ const Review = sequelize.define('Review', {
   reservationId: { type: DataTypes.STRING, allowNull: false }
 });
 
+// Modelo para verificación de teléfono (OTPs)
+const PhoneVerification = sequelize.define('PhoneVerification', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  userId: { type: DataTypes.STRING, allowNull: false },
+  newPhone: { type: DataTypes.STRING, allowNull: false },
+  codeHash: { type: DataTypes.STRING, allowNull: false },
+  method: { type: DataTypes.STRING, allowNull: false, defaultValue: 'sms' },
+  expiresAt: { type: DataTypes.DATE, allowNull: false },
+  used: { type: DataTypes.BOOLEAN, defaultValue: false },
+  attempts: { type: DataTypes.INTEGER, defaultValue: 0 }
+});
+
 // --- RELACIONES ---
 User.hasMany(ServiceRequest, { as: 'requests', foreignKey: 'clientId' });
 ServiceRequest.belongsTo(User, { as: 'client', foreignKey: 'clientId' });
@@ -103,5 +119,7 @@ module.exports = {
   Reservation,
   Message,
   Review  // ✅ CORRECCIÓN 6: Exportar modelo Review
+  ,
+  PhoneVerification
 };
 
