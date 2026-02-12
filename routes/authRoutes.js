@@ -2,7 +2,8 @@ import express from 'express';
 import { registerClient, registerProfessional, login, getCurrentUser } from '../controllers/authController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 // Phone verification controller (CommonJS module exported)
-const { requestPhoneVerification, verifyPhoneWithCode } = require('../controllers/phoneController');
+import phoneController from '../controllers/phoneController.js';
+const { requestPhoneVerification, verifyPhoneWithCode } = phoneController;
 
 const router = express.Router();
 
