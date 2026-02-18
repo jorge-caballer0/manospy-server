@@ -5,9 +5,11 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { sequelize } from './models/index.js'; // conexión y modelos
 
 dotenv.config();
+
+// Importar sequelize después de cargar variables de entorno
+const { sequelize } = await import('./models/index.js'); // conexión y modelos
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
