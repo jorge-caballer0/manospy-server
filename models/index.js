@@ -96,8 +96,9 @@ const Chat = sequelize.define('Chat', {
     primaryKey: true
   },
   offerId: { type: DataTypes.STRING, allowNull: true },
-  clientId: { type: DataTypes.INTEGER, allowNull: true }, // ✅ INTEGER (coincide con JWT user.id)
-  professionalId: { type: DataTypes.INTEGER, allowNull: true } // ✅ INTEGER
+  // Usar UUID para las referencias a usuarios (coincide con `User.id` que es UUID)
+  clientId: { type: DataTypes.UUID, allowNull: true },
+  professionalId: { type: DataTypes.UUID, allowNull: true }
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
@@ -135,13 +136,15 @@ const PhoneVerification = sequelize.define('PhoneVerification', {
 // ✅ NUEVO: Modelo para direcciones del usuario (mapear a tabla existente 'direcciones')
 const Address = sequelize.define('Address', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  user_id: { type: DataTypes.INTEGER, allowNull: false }, // ✅ INTEGER (coincide con JWT user.id)
+  // La tabla existente 'direcciones' usa UUID para user ids; mantener UUID aquí
+  user_id: { type: DataTypes.UUID, allowNull: false },
   direccion: { type: DataTypes.STRING, allowNull: false }, // fullAddress
   ciudad: { type: DataTypes.STRING, allowNull: false },
   estado: { type: DataTypes.STRING },
-  codigo_postal: { type: DataTypes.STRING }
+  codigo_postal: { type: DataTypes.STRING },
+  created_at: { type: DataTypes.DATE, allowNull: true } // Timestamp de Supabase
 }, { 
-  timestamps: false,  // La tabla no tiene timestamps
+  timestamps: false,  // La tabla maneja timestamps manualmente
   tableName: 'direcciones',  // ✅ Mapear a tabla existente
   underscored: true  // Para que use snake_case
 });

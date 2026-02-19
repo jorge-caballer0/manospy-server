@@ -5,6 +5,9 @@ export const createAddress = async (req, res) => {
   try {
     const user_id = req.user.id; // Del JWT (UUID)
     const { direccion, ciudad, estado, codigo_postal } = req.body;
+    
+    console.log('createAddress: user_id =', user_id, 'type:', typeof user_id);
+    console.log('createAddress: req.body =', req.body);
 
     if (!direccion || !ciudad) {
       return res.status(400).json({ error: 'direccion y ciudad son requeridos' });
@@ -17,14 +20,15 @@ export const createAddress = async (req, res) => {
       estado: estado || null,
       codigo_postal: codigo_postal || null
     });
+    console.log('createAddress: Address created =', address.id);
 
     res.status(201).json({ 
       message: 'Dirección agregada exitosamente',
       address
     });
   } catch (err) {
-    console.error('Error en createAddress:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Error en createAddress:', err.message, err.stack);
+    res.status(500).json({ error: 'Error creando dirección', details: err.message });
   }
 };
 
@@ -32,16 +36,17 @@ export const createAddress = async (req, res) => {
 export const getAddresses = async (req, res) => {
   try {
     const user_id = req.user.id; // Del JWT (UUID)
+    console.log('getAddresses: user_id =', user_id);
 
     const addresses = await Address.findAll({
-      where: { user_id },
-      order: [['created_at', 'DESC']]
+      where: { user_id }
     });
+    console.log('getAddresses: found addresses =', addresses.length);
 
     res.json(addresses);
   } catch (err) {
-    console.error('Error en getAddresses:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Error en getAddresses:', err.message, err.stack);
+    res.status(500).json({ error: 'Error cargando direcciones', details: err.message });
   }
 };
 
