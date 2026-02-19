@@ -5,17 +5,30 @@ import { Op } from 'sequelize';
 export async function createChat(req, res) {
   try {
     const { offerId, professionalId } = req.body;
+    console.log('createChat: req.body =', req.body);
+    console.log('createChat: req.user =', req.user);
+    
     if (!offerId) return res.status(400).json({ message: 'offerId es requerido' });
+    
     // chatId único: usar timestamp + user id como prefijo si existe
-    const prefix = req.user && req.user.id ? req.user.id.slice(0, 8) : 'anon';
+    const userId = req.user ? req.user.id : null;
+    const prefix = userId ? String(userId) : 'anon';
     const chatId = `chat_${prefix}_${Date.now()}`;
-    const clientId = req.user ? req.user.id : null;
-
-    const chat = await Chat.create({ id: chatId, offerId, clientId, professionalId });
+    
+    console.log('createChat: Creating chat with chatId =', chatId, 'clientId =', userId);
+    
+    const chat = await Chat.create({ 
+      id: chatId, 
+      offerId, 
+      clientId: userId, 
+      professionalId: professionalId || null 
+    });
+    
+    console.log('createChat: Chat created successfully:', chat.id);
     return res.json({ chatId: chat.id });
   } catch (err) {
-    console.error('createChat error', err);
-    return res.status(500).json({ message: 'Error creando chat' });
+    console.error('createChat error:', err.message, err.stack);
+    return res.status(500).json({ message: 'Error creando chat', error: err.message });
   }
 }
 

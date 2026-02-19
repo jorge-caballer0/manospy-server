@@ -96,8 +96,8 @@ const Chat = sequelize.define('Chat', {
     primaryKey: true
   },
   offerId: { type: DataTypes.STRING, allowNull: true },
-  clientId: { type: DataTypes.UUID, allowNull: true },
-  professionalId: { type: DataTypes.UUID, allowNull: true }
+  clientId: { type: DataTypes.INTEGER, allowNull: true }, // ✅ INTEGER (coincide con JWT user.id)
+  professionalId: { type: DataTypes.INTEGER, allowNull: true } // ✅ INTEGER
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
@@ -135,7 +135,7 @@ const PhoneVerification = sequelize.define('PhoneVerification', {
 // ✅ NUEVO: Modelo para direcciones del usuario (mapear a tabla existente 'direcciones')
 const Address = sequelize.define('Address', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  user_id: { type: DataTypes.UUID, allowNull: false }, // ✅ UUID (como en BD)
+  user_id: { type: DataTypes.INTEGER, allowNull: false }, // ✅ INTEGER (coincide con JWT user.id)
   direccion: { type: DataTypes.STRING, allowNull: false }, // fullAddress
   ciudad: { type: DataTypes.STRING, allowNull: false },
   estado: { type: DataTypes.STRING },
