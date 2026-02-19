@@ -78,8 +78,8 @@ const Reservation = sequelize.define('Reservation', {
 // Mensajes dentro de una reserva
 const Message = sequelize.define('Message', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true
   },
   reservationId: { type: DataTypes.UUID, allowNull: true }, // UUID foreign key (nullable for pre-reservation chats)
