@@ -33,6 +33,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import soporteRoutes from './routes/soporteRoutes.js';
 import calificacionesRoutes from './routes/calificacionesRoutes.js';
 import direccionesRoutes from './routes/direccionesRoutes.js';
+import addressesRoutes from './routes/addressesRoutes.js';
 
 // Usar rutas
 app.use('/auth', authRoutes);
@@ -43,6 +44,7 @@ app.use('/upload', uploadRoutes);
 app.use('/soporte', soporteRoutes);
 app.use('/calificaciones', calificacionesRoutes);
 app.use('/direcciones', direccionesRoutes);
+app.use('/addresses', addressesRoutes);
 
 // Ruta base
 app.get('/', (req, res) => {
