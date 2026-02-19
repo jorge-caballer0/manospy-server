@@ -83,7 +83,7 @@ const Message = sequelize.define('Message', {
     primaryKey: true
   },
   reservationId: { type: DataTypes.UUID, allowNull: true }, // UUID foreign key (nullable for pre-reservation chats)
-  chatId: { type: DataTypes.STRING, allowNull: true }, // chat identifier when message is pre-reservation
+  chatId: { type: DataTypes.STRING, allowNull: true, columnName: 'chat_id' }, // chat identifier when message is pre-reservation
   content: { type: DataTypes.TEXT, allowNull: false }, // ⚠️ corregido
   senderId: { type: DataTypes.STRING, allowNull: false },
   timestamp: { type: DataTypes.BIGINT, allowNull: false }
@@ -95,10 +95,10 @@ const Chat = sequelize.define('Chat', {
     type: DataTypes.STRING,
     primaryKey: true
   },
-  offerId: { type: DataTypes.STRING, allowNull: true },
+  offerId: { type: DataTypes.STRING, allowNull: true, columnName: 'offer_id' },
   // Usar UUID para las referencias a usuarios (coincide con `User.id` que es UUID)
-  clientId: { type: DataTypes.UUID, allowNull: true },
-  professionalId: { type: DataTypes.UUID, allowNull: true }
+  clientId: { type: DataTypes.UUID, allowNull: true, columnName: 'client_id' },
+  professionalId: { type: DataTypes.UUID, allowNull: true, columnName: 'professional_id' }
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
