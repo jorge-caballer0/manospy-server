@@ -17,6 +17,11 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
 
 // Usuario (clientes y profesionales)
 const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
   name: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
   password: { type: DataTypes.STRING, allowNull: false },
@@ -44,6 +49,12 @@ const User = sequelize.define('User', {
 
 // Solicitudes de servicioS
 const ServiceRequest = sequelize.define('ServiceRequest', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  clientId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
   description: { type: DataTypes.TEXT },
   category: { type: DataTypes.STRING },
   status: { type: DataTypes.STRING, defaultValue: 'pending' }, // pending, accepted, cancelled
@@ -53,11 +64,25 @@ const ServiceRequest = sequelize.define('ServiceRequest', {
 
 // Reservas
 const Reservation = sequelize.define('Reservation', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  clientId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
+  professionalId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
+  serviceRequestId: { type: DataTypes.UUID }, // UUID foreign key
   status: { type: DataTypes.STRING, defaultValue: 'active' } // active, completed, cancelled
 });
 
 // Mensajes dentro de una reserva
 const Message = sequelize.define('Message', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  reservationId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
   content: { type: DataTypes.TEXT, allowNull: false }, // ⚠️ corregido
   senderId: { type: DataTypes.STRING, allowNull: false },
   timestamp: { type: DataTypes.BIGINT, allowNull: false }
@@ -65,9 +90,16 @@ const Message = sequelize.define('Message', {
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
 const Review = sequelize.define('Review', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  reservationId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
   rating: { type: DataTypes.INTEGER, allowNull: false, min: 1, max: 5 }, // 1-5 estrellas
   comment: { type: DataTypes.TEXT },
-  clientId: { type: DataTypes.STRING, allowNull: false },
+  clientId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
+  professionalId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
   professionalId: { type: DataTypes.STRING, allowNull: false },
   reservationId: { type: DataTypes.STRING, allowNull: false }
 });

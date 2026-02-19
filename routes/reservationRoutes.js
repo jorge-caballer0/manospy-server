@@ -3,6 +3,7 @@ import authMiddleware from '../middleware/authMiddleware.js';
 import {
   getReservations,
   createReservation,
+  createReservationFromServiceRequest,
   acceptReservation,
   rejectReservation,
   getMessages,
@@ -18,6 +19,7 @@ const router = express.Router();
 router.get('/', authMiddleware, getReservations);
 router.get('/user', authMiddleware, getReservationsByUser);
 router.post('/', authMiddleware, createReservation);
+router.post('/from-service-request', authMiddleware, createReservationFromServiceRequest);
 router.post('/:id/accept', authMiddleware, acceptReservation);
 router.post('/:id/reject', authMiddleware, rejectReservation);
 router.get('/:id/messages', authMiddleware, getMessages);

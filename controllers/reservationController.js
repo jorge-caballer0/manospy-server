@@ -81,6 +81,37 @@ exports.createReservation = async (req, res) => {
   }
 };
 
+// Crear reserva desde una solicitud de servicio (desde el lado del cliente)
+exports.createReservationFromServiceRequest = async (req, res) => {
+  try {
+    const { serviceRequestId } = req.body;
+    const clientId = req.user.id; // Del JWT
+
+    // Verificar que la solicitud existe
+    const serviceRequest = await ServiceRequest.findByPk(serviceRequestId);
+    if (!serviceRequest) {
+      return res.status(404).json({ error: 'Solicitud de servicio no encontrada' });
+    }
+
+    // Verificar que el cliente es el propietario de la solicitud
+    if (serviceRequest.clientId !== clientId) {
+      return res.status(403).json({ error: 'No tienes permiso para crear una reserva de esta solicitud' });
+    }
+
+    // Crear la reserva con status 'pending'
+    const reservation = await Reservation.create({
+      clientId,
+      serviceRequestId,
+      status: 'pending'
+    });
+
+    res.status(201).json(reservation);
+  } catch (e) {
+    console.error("Error en createReservationFromServiceRequest:", e);
+    res.status(400).json({ error: e.message });
+  }
+};
+
 // Profesional acepta la reserva
 exports.acceptReservation = async (req, res) => {
   try {
