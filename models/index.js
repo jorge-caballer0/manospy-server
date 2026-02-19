@@ -88,18 +88,23 @@ const PhoneVerification = sequelize.define('PhoneVerification', {
   attempts: { type: DataTypes.INTEGER, defaultValue: 0 }
 });
 
-// ✅ NUEVO: Modelo para direcciones del usuario
+// ✅ NUEVO: Modelo para direcciones del usuario (mapear a tabla existente 'direcciones')
 const Address = sequelize.define('Address', {
-  userId: { type: DataTypes.STRING, allowNull: false },
-  fullAddress: { type: DataTypes.STRING, allowNull: false },
-  label: { type: DataTypes.STRING, allowNull: false },
-  latitude: { type: DataTypes.DECIMAL(10, 8) },
-  longitude: { type: DataTypes.DECIMAL(11, 8) }
+  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  user_id: { type: DataTypes.UUID, allowNull: false }, // ✅ UUID (como en BD)
+  direccion: { type: DataTypes.STRING, allowNull: false }, // fullAddress
+  ciudad: { type: DataTypes.STRING, allowNull: false },
+  estado: { type: DataTypes.STRING },
+  codigo_postal: { type: DataTypes.STRING }
+}, { 
+  timestamps: false,  // La tabla no tiene timestamps
+  tableName: 'direcciones',  // ✅ Mapear a tabla existente
+  underscored: true  // Para que use snake_case
 });
 
 // --- RELACIONES ---
-User.hasMany(Address, { as: 'addresses', foreignKey: 'userId' });
-Address.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Address, { as: 'addresses', foreignKey: 'user_id' });
+Address.belongsTo(User, { foreignKey: 'user_id' });
 
 User.hasMany(ServiceRequest, { as: 'requests', foreignKey: 'clientId' });
 ServiceRequest.belongsTo(User, { as: 'client', foreignKey: 'clientId' });

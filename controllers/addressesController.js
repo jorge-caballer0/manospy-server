@@ -3,19 +3,19 @@ import { Address } from '../models/index.js';
 // Crear nueva dirección
 export const createAddress = async (req, res) => {
   try {
-    const userId = req.user.id; // Del JWT
-    const { fullAddress, label, latitude, longitude } = req.body;
+    const user_id = req.user.id; // Del JWT (UUID)
+    const { direccion, ciudad, estado, codigo_postal } = req.body;
 
-    if (!fullAddress || !label) {
-      return res.status(400).json({ error: 'fullAddress y label son requeridos' });
+    if (!direccion || !ciudad) {
+      return res.status(400).json({ error: 'direccion y ciudad son requeridos' });
     }
 
     const address = await Address.create({
-      userId,
-      fullAddress,
-      label,
-      latitude: latitude || null,
-      longitude: longitude || null
+      user_id,
+      direccion,
+      ciudad,
+      estado: estado || null,
+      codigo_postal: codigo_postal || null
     });
 
     res.status(201).json({ 
@@ -31,11 +31,11 @@ export const createAddress = async (req, res) => {
 // Obtener todas las direcciones del usuario
 export const getAddresses = async (req, res) => {
   try {
-    const userId = req.user.id; // Del JWT
+    const user_id = req.user.id; // Del JWT (UUID)
 
     const addresses = await Address.findAll({
-      where: { userId },
-      order: [['createdAt', 'DESC']]
+      where: { user_id },
+      order: [['created_at', 'DESC']]
     });
 
     res.json(addresses);
@@ -49,23 +49,23 @@ export const getAddresses = async (req, res) => {
 export const updateAddress = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-    const { fullAddress, label, latitude, longitude } = req.body;
+    const user_id = req.user.id; // Del JWT (UUID)
+    const { direccion, ciudad, estado, codigo_postal } = req.body;
 
     const address = await Address.findByPk(id);
     if (!address) {
       return res.status(404).json({ error: 'Dirección no encontrada' });
     }
 
-    if (address.userId !== userId) {
+    if (address.user_id !== user_id) {
       return res.status(403).json({ error: 'No tienes permiso para editar esta dirección' });
     }
 
     await address.update({
-      fullAddress: fullAddress || address.fullAddress,
-      label: label || address.label,
-      latitude: latitude !== undefined ? latitude : address.latitude,
-      longitude: longitude !== undefined ? longitude : address.longitude
+      direccion: direccion || address.direccion,
+      ciudad: ciudad || address.ciudad,
+      estado: estado !== undefined ? estado : address.estado,
+      codigo_postal: codigo_postal !== undefined ? codigo_postal : address.codigo_postal
     });
 
     res.json({ 
@@ -82,14 +82,14 @@ export const updateAddress = async (req, res) => {
 export const deleteAddress = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const user_id = req.user.id; // Del JWT (UUID)
 
     const address = await Address.findByPk(id);
     if (!address) {
       return res.status(404).json({ error: 'Dirección no encontrada' });
     }
 
-    if (address.userId !== userId) {
+    if (address.user_id !== user_id) {
       return res.status(403).json({ error: 'No tienes permiso para eliminar esta dirección' });
     }
 
