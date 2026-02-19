@@ -88,7 +88,19 @@ const PhoneVerification = sequelize.define('PhoneVerification', {
   attempts: { type: DataTypes.INTEGER, defaultValue: 0 }
 });
 
+// ✅ NUEVO: Modelo para direcciones del usuario
+const Address = sequelize.define('Address', {
+  userId: { type: DataTypes.STRING, allowNull: false },
+  fullAddress: { type: DataTypes.STRING, allowNull: false },
+  label: { type: DataTypes.STRING, allowNull: false },
+  latitude: { type: DataTypes.DECIMAL(10, 8) },
+  longitude: { type: DataTypes.DECIMAL(11, 8) }
+});
+
 // --- RELACIONES ---
+User.hasMany(Address, { as: 'addresses', foreignKey: 'userId' });
+Address.belongsTo(User, { foreignKey: 'userId' });
+
 User.hasMany(ServiceRequest, { as: 'requests', foreignKey: 'clientId' });
 ServiceRequest.belongsTo(User, { as: 'client', foreignKey: 'clientId' });
 
@@ -97,6 +109,8 @@ Reservation.belongsTo(ServiceRequest, { foreignKey: 'serviceRequestId' });
 
 User.hasMany(Reservation, { as: 'clientReservations', foreignKey: 'clientId' });
 User.hasMany(Reservation, { as: 'profReservations', foreignKey: 'professionalId' });
+Reservation.belongsTo(User, { as: 'client', foreignKey: 'clientId' });
+Reservation.belongsTo(User, { as: 'professional', foreignKey: 'professionalId' });
 
 Reservation.hasMany(Message, { foreignKey: 'reservationId' });
 Message.belongsTo(Reservation, { foreignKey: 'reservationId' }); // relación inversa
@@ -118,8 +132,8 @@ module.exports = {
   ServiceRequest,
   Reservation,
   Message,
-  Review  // ✅ CORRECCIÓN 6: Exportar modelo Review
-  ,
+  Review,
+  Address,
   PhoneVerification
 };
 
