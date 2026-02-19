@@ -1,2 +1,0 @@
-# manospy-server
-servidor manospy
