@@ -82,10 +82,22 @@ const Message = sequelize.define('Message', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  reservationId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
+  reservationId: { type: DataTypes.UUID, allowNull: true }, // UUID foreign key (nullable for pre-reservation chats)
+  chatId: { type: DataTypes.STRING, allowNull: true }, // chat identifier when message is pre-reservation
   content: { type: DataTypes.TEXT, allowNull: false }, // ⚠️ corregido
   senderId: { type: DataTypes.STRING, allowNull: false },
   timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
+
+// Chats previos a formalizar (conversaciones iniciadas desde una oferta)
+const Chat = sequelize.define('Chat', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true
+  },
+  offerId: { type: DataTypes.STRING, allowNull: true },
+  clientId: { type: DataTypes.UUID, allowNull: true },
+  professionalId: { type: DataTypes.UUID, allowNull: true }
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
@@ -151,6 +163,9 @@ Reservation.belongsTo(User, { as: 'professional', foreignKey: 'professionalId' }
 
 Reservation.hasMany(Message, { foreignKey: 'reservationId' });
 Message.belongsTo(Reservation, { foreignKey: 'reservationId' }); // relación inversa
+// Asociaciones para chat
+Chat.hasMany(Message, { foreignKey: 'chatId', sourceKey: 'id' });
+Message.belongsTo(Chat, { foreignKey: 'chatId', targetKey: 'id' });
 
 // ✅ CORRECCIÓN 6: Relaciones para Reviews
 User.hasMany(Review, { as: 'reviewsAsClient', foreignKey: 'clientId' });
@@ -172,5 +187,6 @@ module.exports = {
   Review,
   Address,
   PhoneVerification
+  ,Chat
 };
 
