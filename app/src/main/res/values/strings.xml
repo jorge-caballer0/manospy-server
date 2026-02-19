@@ -1,0 +1,73 @@
+<resources>
+    <string name="app_name">ManosPy</string>
+    <string name="welcome_back">Bienvenido de nuevo</string>
+    <string name="sign_in_to_continue">Inicia sesión en tu cuenta premium</string>
+    <string name="email_address">Correo Electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="sign_in">Iniciar Sesión</string>
+    <string name="dont_have_account">¿Aún no tienes una cuenta?</string>
+    <string name="register_as_client">Regístrate como Cliente</string>
+    <string name="register_as_professional">Regístrate como Profesional</string>
+    <string name="create_account">Crea tu cuenta</string>
+    <string name="join_manospy">Únete a MANOSPY para acceder a servicios premium diseñados para ti.</string>
+    <string name="full_name">Nombre Completo</string>
+    <string name="get_started">Comenzar</string>
+    <string name="already_have_account">¿Ya tienes una cuenta?</string>
+    <string name="identity_details">Detalles de Identidad</string>
+    <string name="step_1_of_4">Paso 1 de 4: Ayúdanos a verificar tu identidad profesional.</string>
+    <string name="continue_btn">Continuar</string>
+    <string name="back">Volver</string>
+    <string name="loading">Cargando...</string>
+    <string name="error_occurred">Ocurrió un error</string>
+    <string name="success">¡Éxito!</string>
+    <string name="accept">Aceptar</string>
+
+    <string name="terms_title">Términos y Condiciones</string>
+    <string name="terms_content">
+        1. Aceptación de los Términos\n
+        Al acceder y utilizar ManosPy, usted acepta cumplir con estos Términos y Condiciones.\n\n
+        2. Descripción del Servicio\n
+        ManosPy conecta usuarios con profesionales independientes.\n\n
+        3. Responsabilidad\n
+        Los profesionales son responsables de la calidad de su trabajo.\n\n
+        4. Privacidad\n
+        Sus datos se manejan según nuestra Política de Privacidad.
+    </string>
+
+    <string name="privacy_title">Política de Privacidad</string>
+    <string name="privacy_content">
+        1. Recolección de Datos\n
+        Recopilamos información personal para verificar su identidad.\n\n
+        2. Uso de Datos\n
+        Sus datos se usan exclusivamente para la operación del servicio.\n\n
+        3. Seguridad\n
+        Implementamos medidas de seguridad premium para proteger su información.\n\n
+        4. Terceros\n
+        No compartimos sus datos con terceros sin su consentimiento.
+    </string>
+
+    <string name="log_in">Inicia sesión</string>
+    <string name="enter_email">Ingresa tu correo</string>
+    <string name="enter_password">Ingresa tu contraseña</string>
+
+    <!-- Professional Registration -->
+    <string name="step_indicator">Paso %1$d de %2$d</string>
+    <string name="identity_document">Documento de Identidad (Foto)</string>
+    <string name="front_side">FRENTE</string>
+    <string name="back_side">DORSO</string>
+    <string name="tap_to_upload">Toca para subir</string>
+    <string name="encryption_info">Tu información está encriptada y solo se utiliza para fines de verificación de identidad.</string>
+    <string name="services_location">Servicios y Ubicación</string>
+    <string name="tell_us_what_you_do">Cuéntanos qué haces y dónde operas</string>
+    <string name="choose_services">Elige tus Servicios</string>
+    <string name="operating_cities">Ciudades de Operación</string>
+    <string name="complete_registration">Completar Registro</string>
+
+    <!-- Client Flows -->
+    <string name="home">Inicio</string>
+    <string name="request">Solicitar</string>
+    <string name="reservations">Reservas</string>
+    <string name="profile">Perfil</string>
+    <string name="confirmation">Confirmación</string>
+</resources>
