@@ -16,7 +16,10 @@ export async function createChat(req, res) {
     console.log('createChat: Creating chat with chatId =', chatId, 'clientId =', userId, 'professionalId =', professionalId);
     
     const chat = await Chat.create({ 
-      id: chatId
+      id: chatId,
+      offerId: offerId || null,
+      clientId: userId || null,
+      professionalId: professionalId || null 
     });
     
     console.log('createChat: Chat created successfully:', chat.id);
@@ -72,8 +75,12 @@ export async function convertChatToReservation(req, res) {
     if (count === 0) return res.status(400).json({ message: 'No hay mensajes en el chat para convertir' });
 
     // El cliente logueado es quien convierte el chat
-    const clientId = req.user ? req.user.id : null;
+    const clientId = chat.clientId || (req.user ? req.user.id : null);
+    const professionalId = chat.professionalId || null;
+    
     if (!clientId) return res.status(401).json({ message: 'Usuario no autenticado' });
+
+    console.log('convertChatToReservation: Converting chat', chatId, 'clientId:', clientId, 'professionalId:', professionalId);
 
     // Crear ServiceRequest y Reservation con estado EN_PROCESO
     const serviceRequest = await ServiceRequest.create({
@@ -85,7 +92,7 @@ export async function convertChatToReservation(req, res) {
 
     const reservation = await Reservation.create({
       clientId: clientId,
-      professionalId: null, // Se asigna cuando el profesional acepta
+      professionalId: professionalId,
       serviceRequestId: serviceRequest.id,
       status: 'EN_PROCESO'
     });

@@ -94,7 +94,10 @@ const Chat = sequelize.define('Chat', {
   id: {
     type: DataTypes.STRING,
     primaryKey: true
-  }
+  },
+  offerId: { type: DataTypes.STRING, allowNull: true },
+  clientId: { type: DataTypes.STRING, allowNull: true },
+  professionalId: { type: DataTypes.STRING, allowNull: true }
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
