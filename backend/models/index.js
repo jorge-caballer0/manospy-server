@@ -18,8 +18,8 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
 // Usuario (clientes y profesionales)
 const User = sequelize.define('User', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true
   },
   name: { type: DataTypes.STRING, allowNull: false },
@@ -50,11 +50,11 @@ const User = sequelize.define('User', {
 // Solicitudes de servicioS
 const ServiceRequest = sequelize.define('ServiceRequest', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true
   },
-  clientId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
+  clientId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
   description: { type: DataTypes.TEXT },
   category: { type: DataTypes.STRING },
   status: { type: DataTypes.STRING, defaultValue: 'pending' }, // pending, accepted, cancelled
@@ -65,13 +65,13 @@ const ServiceRequest = sequelize.define('ServiceRequest', {
 // Reservas
 const Reservation = sequelize.define('Reservation', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true
   },
-  clientId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
-  professionalId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
-  serviceRequestId: { type: DataTypes.UUID }, // UUID foreign key
+  clientId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
+  professionalId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
+  serviceRequestId: { type: DataTypes.INTEGER }, // INTEGER foreign key
   status: { type: DataTypes.STRING, defaultValue: 'active' } // active, completed, cancelled
 });
 
@@ -82,7 +82,7 @@ const Message = sequelize.define('Message', {
     autoIncrement: true,
     primaryKey: true
   },
-  reservationId: { type: DataTypes.UUID, allowNull: true }, // UUID foreign key (nullable for pre-reservation chats)
+  reservationId: { type: DataTypes.INTEGER, allowNull: true }, // INTEGER foreign key (nullable for pre-reservation chats)
   chatId: { type: DataTypes.STRING, allowNull: true, field: 'chat_id' }, // chat identifier when message is pre-reservation
   content: { type: DataTypes.TEXT, allowNull: false }, // ⚠️ corregido
   senderId: { type: DataTypes.STRING, allowNull: false },
@@ -96,23 +96,23 @@ const Chat = sequelize.define('Chat', {
     primaryKey: true
   },
   offerId: { type: DataTypes.STRING, allowNull: true, field: 'offer_id' },
-  // Usar UUID para las referencias a usuarios (coincide con `User.id` que es UUID)
-  clientId: { type: DataTypes.UUID, allowNull: true, field: 'client_id' },
-  professionalId: { type: DataTypes.UUID, allowNull: true, field: 'professional_id' }
+  // Usar INTEGER para las referencias a usuarios (coincide con `User.id` que es INTEGER)
+  clientId: { type: DataTypes.INTEGER, allowNull: true, field: 'client_id' },
+  professionalId: { type: DataTypes.INTEGER, allowNull: true, field: 'professional_id' }
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
 const Review = sequelize.define('Review', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true
   },
-  reservationId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
+  reservationId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
   rating: { type: DataTypes.INTEGER, allowNull: false, min: 1, max: 5 }, // 1-5 estrellas
   comment: { type: DataTypes.TEXT },
-  clientId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
-  professionalId: { type: DataTypes.UUID, allowNull: false }, // UUID foreign key
+  clientId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
+  professionalId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
   professionalId: { type: DataTypes.STRING, allowNull: false },
   reservationId: { type: DataTypes.STRING, allowNull: false }
 });
@@ -120,8 +120,8 @@ const Review = sequelize.define('Review', {
 // Modelo para verificación de teléfono (OTPs)
 const PhoneVerification = sequelize.define('PhoneVerification', {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true
   },
   userId: { type: DataTypes.STRING, allowNull: false },
@@ -135,9 +135,9 @@ const PhoneVerification = sequelize.define('PhoneVerification', {
 
 // ✅ NUEVO: Modelo para direcciones del usuario (mapear a tabla existente 'direcciones')
 const Address = sequelize.define('Address', {
-  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
-  // La tabla existente 'direcciones' usa UUID para user ids; mantener UUID aquí
-  user_id: { type: DataTypes.UUID, allowNull: false },
+  id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+  // La tabla existente 'direcciones' usa INTEGER para user ids
+  user_id: { type: DataTypes.INTEGER, allowNull: false },
   direccion: { type: DataTypes.STRING, allowNull: false }, // fullAddress
   ciudad: { type: DataTypes.STRING, allowNull: false },
   estado: { type: DataTypes.STRING },
