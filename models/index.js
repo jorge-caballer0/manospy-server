@@ -95,7 +95,6 @@ const Chat = sequelize.define('Chat', {
     type: DataTypes.STRING,
     primaryKey: true
   },
-  offerId: { type: DataTypes.STRING, allowNull: true, field: 'offer_id' },
   // Usar INTEGER para las referencias a usuarios (coincide con `User.id` que es INTEGER)
   clientId: { type: DataTypes.INTEGER, allowNull: true, field: 'client_id' },
   professionalId: { type: DataTypes.INTEGER, allowNull: true, field: 'professional_id' }

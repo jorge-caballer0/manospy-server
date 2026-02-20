@@ -8,18 +8,15 @@ export async function createChat(req, res) {
     console.log('createChat: req.body =', req.body);
     console.log('createChat: req.user =', req.user);
     
-    if (!offerId) return res.status(400).json({ message: 'offerId es requerido' });
-    
     // chatId único: usar timestamp + user id como prefijo si existe
     const userId = req.user ? req.user.id : null;
     const prefix = userId ? String(userId) : 'anon';
     const chatId = `chat_${prefix}_${Date.now()}`;
     
-    console.log('createChat: Creating chat with chatId =', chatId, 'clientId =', userId);
+    console.log('createChat: Creating chat with chatId =', chatId, 'clientId =', userId, 'professionalId =', professionalId);
     
     const chat = await Chat.create({ 
       id: chatId, 
-      offerId, 
       clientId: userId, 
       professionalId: professionalId || null 
     });
