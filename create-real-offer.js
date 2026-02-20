@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = process.env.API_URL || 'https://manospy-server.onrender.com';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-from-env';
 
 // Generate JWT token for professional user (ID 22)
