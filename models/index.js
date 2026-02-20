@@ -95,9 +95,9 @@ const Chat = sequelize.define('Chat', {
     type: DataTypes.STRING,
     primaryKey: true
   },
-  // Usar INTEGER para las referencias a usuarios (coincide con `User.id` que es INTEGER)
-  clientId: { type: DataTypes.INTEGER, allowNull: true, field: 'client_id' },
-  professionalId: { type: DataTypes.INTEGER, allowNull: true, field: 'professional_id' }
+  offerId: { type: DataTypes.STRING, allowNull: true },
+  clientId: { type: DataTypes.STRING, allowNull: true },
+  professionalId: { type: DataTypes.STRING, allowNull: true }
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones

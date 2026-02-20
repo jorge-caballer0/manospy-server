@@ -16,8 +16,9 @@ export async function createChat(req, res) {
     console.log('createChat: Creating chat with chatId =', chatId, 'clientId =', userId, 'professionalId =', professionalId);
     
     const chat = await Chat.create({ 
-      id: chatId, 
-      clientId: userId, 
+      id: chatId,
+      offerId: offerId || null,
+      clientId: userId || null,
       professionalId: professionalId || null 
     });
     
@@ -47,20 +48,14 @@ export async function postChatMessage(req, res) {
     const { content } = req.body;
     if (!chatId) return res.status(400).json({ message: 'chatId es requerido' });
     if (!content || content.trim().length === 0) return res.status(400).json({ message: 'content es requerido' });
-    const senderId = req.user ? req.user.id : 'anonymous';
-    // Verificar que el usuario participa en el chat (client o professional)
-    const chat = await Chat.findByPk(chatId);
-    if (chat) {
-      const uid = req.user ? req.user.id : null;
-      if (uid && chat.clientId && chat.professionalId) {
-        if (uid !== chat.clientId && uid !== chat.professionalId) {
-          return res.status(403).json({ message: 'No autorizado para enviar mensajes en este chat' });
-        }
-      }
-    }
+    
+    const senderId = req.user ? String(req.user.id) : 'anonymous';
     const timestamp = Date.now();
+    
+    console.log('postChatMessage: Creating message - chatId:', chatId, 'senderId:', senderId, 'content:', content);
 
     const msg = await Message.create({ chatId, content, senderId, timestamp });
+    console.log('postChatMessage: Message created successfully:', msg.id);
     return res.json(msg);
   } catch (err) {
     console.error('postChatMessage error', err);
@@ -75,26 +70,29 @@ export async function convertChatToReservation(req, res) {
     const chat = await Chat.findByPk(chatId);
     if (!chat) return res.status(404).json({ message: 'Chat no encontrado' });
 
-    // Solo el cliente que inició el chat puede convertir
-    if (req.user && chat.clientId && req.user.id !== chat.clientId) {
-      return res.status(403).json({ message: 'No autorizado para convertir este chat' });
-    }
-
     // Validar que haya al menos un mensaje en el chat
     const count = await Message.count({ where: { chatId } });
     if (count === 0) return res.status(400).json({ message: 'No hay mensajes en el chat para convertir' });
 
+    // El cliente logueado es quien convierte el chat
+    const clientId = chat.clientId || (req.user ? req.user.id : null);
+    const professionalId = chat.professionalId || null;
+    
+    if (!clientId) return res.status(401).json({ message: 'Usuario no autenticado' });
+
+    console.log('convertChatToReservation: Converting chat', chatId, 'clientId:', clientId, 'professionalId:', professionalId);
+
     // Crear ServiceRequest y Reservation con estado EN_PROCESO
     const serviceRequest = await ServiceRequest.create({
-      clientId: chat.clientId || (req.user ? req.user.id : null),
+      clientId: clientId,
       description: `Solicitud convertida desde chat ${chatId}`,
       category: 'general',
       status: 'EN_PROCESO'
     });
 
     const reservation = await Reservation.create({
-      clientId: serviceRequest.clientId,
-      professionalId: chat.professionalId || null,
+      clientId: clientId,
+      professionalId: professionalId,
       serviceRequestId: serviceRequest.id,
       status: 'EN_PROCESO'
     });
@@ -102,6 +100,7 @@ export async function convertChatToReservation(req, res) {
     // Asociar mensajes del chat a la nueva reserva (set reservationId)
     await Message.update({ reservationId: reservation.id }, { where: { chatId } });
 
+    console.log('convertChatToReservation: Converted chat', chatId, 'to reservation', reservation.id);
     return res.json({ reservationId: reservation.id, serviceRequestId: serviceRequest.id });
   } catch (err) {
     console.error('convertChatToReservation error', err);
