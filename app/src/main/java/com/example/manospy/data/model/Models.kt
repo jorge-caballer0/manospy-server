@@ -52,6 +52,35 @@ data class ServiceRequest(
     val clientName: String? = null
 )
 
+// ✅ NUEVO: Modelo para ofertas de profesionales
+data class ProfessionalOffer(
+    val id: String,
+    val professionalId: String,
+    val title: String,
+    val description: String,
+    val category: String,
+    val location: String? = null,
+    val price: String? = null,
+    val currency: String = "ARS",
+    val availability: Map<String, Any>? = null,
+    val status: String = "active",
+    val image_url: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val professional: User? = null  // Datos del profesional que ofrece
+)
+
+data class ProfessionalOffersResponse(
+    val offers: List<ProfessionalOffer>,
+    val pagination: PaginationInfo? = null
+)
+
+data class PaginationInfo(
+    val total: Int,
+    val page: Int,
+    val pages: Int
+)
+
 enum class ReservationStatus {
     @SerializedName("pending")
     PENDING,

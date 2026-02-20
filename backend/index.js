@@ -35,6 +35,7 @@ import calificacionesRoutes from './routes/calificacionesRoutes.js';
 import direccionesRoutes from './routes/direccionesRoutes.js';
 import addressesRoutes from './routes/addressesRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import offersRoutes from './routes/offersRoutes.js';
 
 // Usar rutas
 app.use('/auth', authRoutes);
@@ -47,6 +48,7 @@ app.use('/calificaciones', calificacionesRoutes);
 app.use('/direcciones', direccionesRoutes);
 app.use('/addresses', addressesRoutes);
 app.use('/chats', chatRoutes);
+app.use('/offers', offersRoutes);
 
 // Ruta base
 app.get('/', (req, res) => {

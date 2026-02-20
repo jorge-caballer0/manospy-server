@@ -112,9 +112,7 @@ const Review = sequelize.define('Review', {
   rating: { type: DataTypes.INTEGER, allowNull: false, min: 1, max: 5 }, // 1-5 estrellas
   comment: { type: DataTypes.TEXT },
   clientId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
-  professionalId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
-  professionalId: { type: DataTypes.STRING, allowNull: false },
-  reservationId: { type: DataTypes.STRING, allowNull: false }
+  professionalId: { type: DataTypes.INTEGER, allowNull: false } // INTEGER foreign key
 });
 
 // Modelo para verificación de teléfono (OTPs)
@@ -149,6 +147,25 @@ const Address = sequelize.define('Address', {
   underscored: true  // Para que use snake_case
 });
 
+// ✅ NUEVO: Modelo para ofertas de profesionales
+const ProfessionalOffer = sequelize.define('ProfessionalOffer', {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+  professionalId: { type: DataTypes.INTEGER, allowNull: false }, // INTEGER foreign key
+  title: { type: DataTypes.STRING, allowNull: false }, // Título de la oferta
+  description: { type: DataTypes.TEXT, allowNull: false }, // Descripción detallada
+  category: { type: DataTypes.STRING, allowNull: false }, // Categoría/oficio
+  location: { type: DataTypes.STRING }, // Ubicación donde ofrece servicio
+  price: { type: DataTypes.DECIMAL(10, 2) }, // Precio
+  currency: { type: DataTypes.STRING, defaultValue: 'ARS' }, // ARS, USD, etc.
+  availability: { type: DataTypes.JSON }, // Disponibilidad {days: [], hours: ""}
+  status: { type: DataTypes.STRING, defaultValue: 'active' }, // active, inactive, archived
+  image_url: { type: DataTypes.STRING } // URL a imagen de la oferta
+});
+
 // --- RELACIONES ---
 User.hasMany(Address, { as: 'addresses', foreignKey: 'user_id' });
 Address.belongsTo(User, { foreignKey: 'user_id' });
@@ -170,6 +187,10 @@ Message.belongsTo(Reservation, { foreignKey: 'reservationId' }); // relación in
 Chat.hasMany(Message, { foreignKey: 'chatId', sourceKey: 'id' });
 Message.belongsTo(Chat, { foreignKey: 'chatId', targetKey: 'id' });
 
+// ✅ Relaciones para ProfessionalOffers
+User.hasMany(ProfessionalOffer, { as: 'offers', foreignKey: 'professionalId' });
+ProfessionalOffer.belongsTo(User, { as: 'professional', foreignKey: 'professionalId' });
+
 // ✅ CORRECCIÓN 6: Relaciones para Reviews
 User.hasMany(Review, { as: 'reviewsAsClient', foreignKey: 'clientId' });
 User.hasMany(Review, { as: 'reviewsAsProf', foreignKey: 'professionalId' });
@@ -189,7 +210,8 @@ module.exports = {
   Message,
   Review,
   Address,
-  PhoneVerification
-  ,Chat
+  PhoneVerification,
+  Chat,
+  ProfessionalOffer
 };
 
