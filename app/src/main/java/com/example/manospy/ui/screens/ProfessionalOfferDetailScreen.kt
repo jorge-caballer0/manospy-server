@@ -27,7 +27,7 @@ import com.example.manospy.ui.components.AppScaffold
 import com.example.manospy.ui.theme.AppColors
 import androidx.compose.runtime.collectAsState
 import com.example.manospy.ui.viewmodel.ServiceViewModel
-import com.example.manospy.ui.viewmodel.ProfessionalOffer
+import com.example.manospy.data.model.ProfessionalOffer
 import com.example.manospy.ui.navigation.Screen
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,8 +38,8 @@ fun ProfessionalOfferDetailScreen(
     navController: NavController? = null,
     viewModel: com.example.manospy.ui.viewmodel.ServiceViewModel? = null
 ) {
-    val selectedOffer by (viewModel?.selectedOffer?.collectAsState() ?: mutableStateOf<ProfessionalOffer?>(null))
-    val offer = selectedOffer
+    val offer = viewModel?.selectedOffer?.collectAsState()?.value
+    
     if (offer == null) {
         AppScaffold(
             title = "Detalle de Oferta",
@@ -112,7 +112,7 @@ fun ProfessionalOfferDetailScreen(
 
                     // Professional Name
                     Text(
-                        text = offer.clientName,
+                        text = offer.professional?.name ?: "Profesional",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
@@ -125,7 +125,7 @@ fun ProfessionalOfferDetailScreen(
                         color = Color.White.copy(alpha = 0.2f)
                     ) {
                         Text(
-                            text = offer.serviceName,
+                            text = offer.title ?: "",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White,
@@ -142,14 +142,14 @@ fun ProfessionalOfferDetailScreen(
                             Icon(
                                 Icons.Default.Star,
                                 contentDescription = null,
-                                tint = if (index < offer.clientRating.toInt()) Color(0xFFFCD34D) else Color.White.copy(
+                                tint = if (index < 4) Color(0xFFFCD34D) else Color.White.copy(
                                     alpha = 0.3f
                                 ),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                         Text(
-                            text = "${offer.clientRating} (${offer.reviewCount})",
+                            text = "4.5 (0)",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
@@ -165,11 +165,12 @@ fun ProfessionalOfferDetailScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Budget Card
+                // Budget Card (usar campos del modelo)
+                val safeBudget = offer.price?.let { "$it ${offer.currency}" } ?: "No especificado"
                 OfferDetailCard(
                     title = "Presupuesto",
                     icon = Icons.Default.AttachMoney,
-                    content = offer.budget,
+                    content = safeBudget,
                     contentColor = accentGreen,
                     cardBg = cardBg,
                     borderColor = borderColor,
@@ -178,28 +179,30 @@ fun ProfessionalOfferDetailScreen(
                 )
 
                 // Service Details
+                val safeService = offer.title ?: ""
                 OfferDetailCard(
                     title = "Servicio",
                     icon = Icons.Default.Build,
-                    content = offer.serviceName,
+                    content = safeService,
                     cardBg = cardBg,
                     borderColor = borderColor,
                     textPrimary = textPrimary,
                     textSecondary = textSecondary
                 )
 
-                // Urgency
+                // Urgency (usar status como fallback si urgency no existe en backend)
+                val safeUrgency = (offer.status ?: "Disponible").lowercase()
                 OfferDetailCard(
                     title = "Urgencia",
                     icon = Icons.Default.Schedule,
-                    content = when (offer.urgency.lowercase()) {
-                        "high" -> "Alta"
+                    content = when (safeUrgency) {
+                        "high", "urgent" -> "Alta"
                         "medium" -> "Media"
                         "low" -> "Baja"
-                        else -> offer.urgency
+                        else -> safeUrgency
                     },
-                    contentColor = when (offer.urgency.lowercase()) {
-                        "high" -> Color(0xFFEF4444)
+                    contentColor = when (safeUrgency) {
+                        "high", "urgent" -> Color(0xFFEF4444)
                         "medium" -> Color(0xFFFB923C)
                         else -> textSecondary
                     },
@@ -248,7 +251,7 @@ fun ProfessionalOfferDetailScreen(
                             )
                         }
                         Text(
-                            "Profesional certificado con experiencia en ${offer.serviceName.lowercase()}. Disponible para trabajos de urgencia.",
+                            "Profesional certificado con experiencia en ${safeService.lowercase()}. Disponible para trabajos de urgencia.",
                             fontSize = 13.sp,
                             color = textSecondary,
                             lineHeight = 20.sp
@@ -271,14 +274,22 @@ fun ProfessionalOfferDetailScreen(
                                 val vm = viewModel
                                 if (vm != null) {
                                     val result = vm.createChatSync(offer.id)
+                                    android.util.Log.d("ProfessionalOfferDetailScreen", "createChat result: $result")
+                                    
                                     if (result is com.example.manospy.util.NetworkResult.Success) {
+                                        android.util.Log.d("ProfessionalOfferDetailScreen", "createChat SUCCESS: data=${result.data}")
                                         val chatId = (result.data as? com.example.manospy.data.model.CreateChatResponse)?.chatId ?: ""
+                                        android.util.Log.d("ProfessionalOfferDetailScreen", "Extracted chatId: '$chatId'")
+                                        
                                         if (chatId.isNotEmpty()) {
+                                            android.util.Log.d("ProfessionalOfferDetailScreen", "Navigating to Chat with chatId: $chatId")
                                             navController?.navigate(Screen.Chat.createRoute(chatId))
                                         } else {
+                                            android.util.Log.d("ProfessionalOfferDetailScreen", "ChatId empty, fallback to offer.id: ${offer.id}")
                                             navController?.navigate(Screen.Chat.createRoute(offer.id))
                                         }
                                     } else {
+                                        android.util.Log.e("ProfessionalOfferDetailScreen", "createChat ERROR: ${(result as? com.example.manospy.util.NetworkResult.Error)?.message}")
                                         // Fallback: navegar con offer.id para compatibilidad
                                         navController?.navigate(Screen.Chat.createRoute(offer.id))
                                     }

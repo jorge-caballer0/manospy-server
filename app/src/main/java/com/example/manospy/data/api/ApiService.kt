@@ -23,6 +23,8 @@ import com.example.manospy.data.model.User
 import com.example.manospy.data.model.CreateChatRequest
 import com.example.manospy.data.model.CreateChatResponse
 import com.example.manospy.data.model.ConvertChatResponse
+import com.example.manospy.data.model.ChatListItem
+import com.example.manospy.data.model.ConversationItem
 import com.example.manospy.data.model.ProfessionalOffer
 import com.example.manospy.data.model.ProfessionalOffersResponse
 import retrofit2.Response
@@ -262,19 +264,13 @@ interface ApiService {
     suspend fun listConversations(): Response<List<ChatListItem>>
 
     @GET("chats/{chatId}/messages")
-    suspend fun getChatMessages(@Path("chatId") chatId: String): Response<List<Message>>
+    suspend fun getChatMessagesForChat(@Path("chatId") chatId: String): Response<List<Message>>
 
     @POST("chats/{chatId}/messages")
-    suspend fun postChatMessage(@Path("chatId") chatId: String, @Body message: MessageInput): Response<Message>
+    suspend fun postChatMessageToChat(@Path("chatId") chatId: String, @Body message: MessageInput): Response<Message>
 
     @PUT("chats/{messageId}/read")
     suspend fun markMessageAsRead(@Path("messageId") messageId: String): Response<Message>
-
-    @POST("chats/{chatId}/convert")
-    suspend fun getChatMessages(@Path("chatId") chatId: String): Response<List<Message>>
-
-    @POST("chats/{chatId}/messages")
-    suspend fun postChatMessage(@Path("chatId") chatId: String, @Body message: MessageInput): Response<Message>
 
     @POST("chats/{chatId}/convert")
     suspend fun convertChat(@Path("chatId") chatId: String): Response<ConvertChatResponse>

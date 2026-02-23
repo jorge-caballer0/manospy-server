@@ -121,7 +121,7 @@ fun ChatScreen(
             // Marcar mensajes recibidos como leídos
             val messagesList = (messages as NetworkResult.Success<List<Message>>).data
             messagesList.forEach { msg ->
-                if (msg.senderId != userId && msg.readStatus != "read") {
+                if (msg.senderId != userId && (msg.readStatus ?: "sent") != "read") {
                     viewModel.markMessageAsRead(msg.id)
                 }
             }
@@ -205,7 +205,7 @@ fun ChatScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(msgResult.data) { message ->
-                                ChatBubble(message, userId)
+                                ChatBubble(message, userId ?: "")
                             }
                         }
                     }

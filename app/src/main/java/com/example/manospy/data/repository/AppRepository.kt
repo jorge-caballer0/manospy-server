@@ -104,10 +104,10 @@ class AppRepository(
         safeApiCall { api.createChat(com.example.manospy.data.model.CreateChatRequest(offerId, professionalId)) }
 
     suspend fun getChatMessages(chatId: String): NetworkResult<List<Message>> =
-        safeApiCall { api.getChatMessages(chatId) }
+        safeApiCall { api.getChatMessagesForChat(chatId) }
 
     suspend fun postChatMessage(chatId: String, content: String): NetworkResult<Message> =
-        safeApiCall { api.postChatMessage(chatId, com.example.manospy.data.model.MessageInput(senderId = "", content = content)) }
+        safeApiCall { api.postChatMessageToChat(chatId, com.example.manospy.data.model.MessageInput(senderId = "", content = content)) }
 
     suspend fun convertChat(chatId: String): NetworkResult<com.example.manospy.data.model.ConvertChatResponse> =
         safeApiCall { api.convertChat(chatId) }

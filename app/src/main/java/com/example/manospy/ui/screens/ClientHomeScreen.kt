@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.manospy.data.model.Reservation
+import com.example.manospy.data.model.ProfessionalOffer
 import com.example.manospy.ui.navigation.Screen
 import com.example.manospy.ui.navigation.BottomNavScreen
 import com.example.manospy.ui.viewmodel.ServiceViewModel
@@ -58,9 +59,15 @@ fun ClientHomeScreen(
     val cardBg = Color.White
     val borderColor = Color(0xFFE2E8F0)
 
-    // Obtener datos del ViewModel
+    // Obtener datos del ViewModel - Observar StateFlow para ofertas
     val activeReservations = serviceViewModel?.getActiveReservations() ?: emptyList()
-    val offers = serviceViewModel?.getOffers() ?: emptyList()
+    val offersState = serviceViewModel?.professionalOffers?.collectAsState()?.value
+    val offers = when (offersState) {
+        is NetworkResult.Success -> offersState.data
+        is NetworkResult.Loading -> emptyList()
+        is NetworkResult.Error -> emptyList()
+        else -> emptyList()
+    }
 
     val scope = rememberCoroutineScope()
     var navigateToProfile by remember { mutableStateOf(false) }
@@ -101,6 +108,7 @@ fun ClientHomeScreen(
                 serviceViewModel?.fetchReservations(userId)
                 serviceViewModel?.fetchServiceRequests()
                 serviceViewModel?.fetchReservationsByStatus("accepted")
+                serviceViewModel?.fetchOffers()  // ✅ Cargar ofertas reales
             } catch (_: Exception) {}
         }
     }
@@ -654,7 +662,7 @@ private fun ActiveReservationItem(
 
 @Composable
 private fun OfferCard(
-    offer: com.example.manospy.ui.viewmodel.ProfessionalOffer,
+    offer: com.example.manospy.data.model.ProfessionalOffer,
     primaryBlue: Color,
     cardBg: Color,
     borderColor: Color,
@@ -698,13 +706,13 @@ private fun OfferCard(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = offer.clientName,
+                            text = offer.professional?.name ?: "Profesional",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF0F172A)
                         )
                         Text(
-                            text = offer.serviceName,
+                            text = offer.title ?: "",
                             fontSize = 11.sp,
                             color = Color(0xFF64748B),
                             maxLines = 1
@@ -743,7 +751,7 @@ private fun OfferCard(
                         )
                     )
                     Text(
-                        text = offer.budget,
+                        text = "${offer.price} ${offer.currency}",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = primaryBlue

@@ -39,6 +39,11 @@ fun ProfessionalOffersScreen(
     val textSecondary = Color(0xFF6B7280)
 
     val offers = serviceViewModel?.getOffers() ?: emptyList()
+    
+    // ✅ Cargar ofertas al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        serviceViewModel?.fetchOffers()
+    }
 
     AppScaffold(
         title = "Mis Ofertas",
@@ -87,13 +92,21 @@ fun ProfessionalOffersScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(offers, key = { it.id }) { offer ->
+                    // Mapear campos del modelo `ProfessionalOffer` a valores seguros para la UI
+                    val clientName = offer.professional?.name ?: "Profesional"
+                    val serviceName = offer.title
+                    val budget = offer.price?.let { "$it ${offer.currency}" } ?: "No especificado"
+                    val rating = 0.0
+                    val reviewCount = 0
+                    val urgency = offer.status ?: "Disponible"
+
                     OfferCard(
-                        clientName = offer.clientName,
-                        service = offer.serviceName,
-                        budget = offer.budget,
-                        rating = offer.clientRating,
-                        reviewCount = offer.reviewCount,
-                        urgency = offer.urgency,
+                        clientName = clientName,
+                        service = serviceName,
+                        budget = budget,
+                        rating = rating,
+                        reviewCount = reviewCount,
+                        urgency = urgency,
                         onClick = {
                             navController.let {
                                 serviceViewModel?.setSelectedOffer(offer)
@@ -109,13 +122,13 @@ fun ProfessionalOffersScreen(
 
 @Composable
 private fun OfferCard(
-    clientName: String,
-    service: String,
-    budget: String,
-    rating: Double,
-    reviewCount: Int,
-    urgency: String,
-    onClick: () -> Unit
+    clientName: String? = null,
+    service: String? = null,
+    budget: String? = null,
+    rating: Double = 0.0,
+    reviewCount: Int = 0,
+    urgency: String? = null,
+    onClick: () -> Unit = {}
 ) {
     val primaryBlue = Color(0xFF0056D2)
     val cardBg = Color.White
@@ -143,15 +156,18 @@ private fun OfferCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // defensivo: convertir posibles nulos/valores vacíos a defaults
+                val safeClient = (clientName ?: "").ifEmpty { "Profesional" }
+                val safeService = (service ?: "").ifEmpty { "Servicio disponible" }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        clientName,
+                        text = safeClient,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = textPrimary
                     )
                     Text(
-                        service,
+                        text = safeService,
                         fontSize = 13.sp,
                         color = textSecondary
                     )
@@ -195,8 +211,9 @@ private fun OfferCard(
                     fontSize = 13.sp,
                     color = textSecondary
                 )
+                val safeBudget = (budget ?: "").ifEmpty { "No especificado" }
                 Text(
-                    budget,
+                    text = safeBudget,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = primaryBlue
@@ -204,7 +221,7 @@ private fun OfferCard(
             }
 
             // Urgency badge
-            if (urgency.isNotEmpty()) {
+            if (!urgency.isNullOrEmpty()) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.Start)
@@ -215,8 +232,9 @@ private fun OfferCard(
                         else -> Color(0xFFF0FDF4)
                     }
                 ) {
+                    val safeUrgency = (urgency ?: "").ifEmpty { "disponible" }
                     Text(
-                        urgency.uppercase(),
+                        text = safeUrgency.uppercase(),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = when (urgency) {

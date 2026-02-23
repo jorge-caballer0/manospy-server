@@ -248,9 +248,9 @@ private fun ChatItemRow(
                 color = Color(0xFFE0E7FF),
                 shadowElevation = 2.dp
             ) {
-                if (chat.professional?.profilePhotoUrl != null) {
+                if (chat.professional?.avatarUrl != null) {
                     AsyncImage(
-                        model = chat.professional.profilePhotoUrl,
+                        model = chat.professional.avatarUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -337,7 +337,7 @@ fun formatTimestamp(timestamp: Long): String {
             diffMins < 60 -> "Hace $diffMins min"
             diffHours < 24 -> "Hace $diffHours h"
             diffDays < 7 -> "Hace $diffDays días"
-            else → "Hace una semana"
+            else -> "Hace una semana"
         }
     }
 }

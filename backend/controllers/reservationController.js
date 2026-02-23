@@ -47,6 +47,13 @@ exports.getReservationsByUser = async (req, res) => {
 exports.getReservationById = async (req, res) => {
   try {
     const id = req.params.id;
+    
+    // Si el ID parece un chatId (empieza con "chat_"), retornar 404 en lugar de 500
+    if (typeof id === 'string' && id.startsWith('chat_')) {
+      console.log('getReservationById: ID parece ser un chatId, retornando 404');
+      return res.status(404).json({ error: 'Reserva no encontrada (ID de chat detectado)' });
+    }
+    
     const reservation = await Reservation.findByPk(id, {
       include: [
         { model: ServiceRequest },
@@ -56,7 +63,11 @@ exports.getReservationById = async (req, res) => {
     if (!reservation) return res.status(404).json({ error: 'Reserva no encontrada' });
     res.json(reservation);
   } catch (e) {
-    console.error("Error en getReservationById:", e);
+    console.error("Error en getReservationById:", e.message);
+    // Si es error de SQL (UUID/integer parsing), retornar 404 en lugar de 500
+    if (e.message && e.message.includes('invalid input syntax')) {
+      return res.status(404).json({ error: 'ID de reserva inválido' });
+    }
     res.status(500).json({ error: e.message });
   }
 };

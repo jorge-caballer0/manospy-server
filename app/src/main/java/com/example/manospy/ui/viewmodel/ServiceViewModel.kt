@@ -495,7 +495,7 @@ class ServiceViewModel : ViewModel() {
     fun fetchChatMessages(chatId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _messages.value = NetworkResult.Loading
-            _messages.value = safeApiCall { api.getChatMessages(chatId) }
+            _messages.value = safeApiCall { api.getChatMessagesForChat(chatId) }
         }
     }
 
@@ -513,7 +513,7 @@ class ServiceViewModel : ViewModel() {
             val messageInput = MessageInput(senderId, text)
             android.util.Log.d("ServiceViewModel", "MessageInput JSON: senderId='${messageInput.senderId}', content='${messageInput.content}'")
             
-            val result = safeApiCall { api.postChatMessage(chatId, messageInput) }
+            val result = safeApiCall { api.postChatMessageToChat(chatId, messageInput) }
             if (result is NetworkResult.Success) {
                 _messageError.value = null
                 fetchChatMessages(chatId)

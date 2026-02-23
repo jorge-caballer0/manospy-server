@@ -8,9 +8,14 @@ export async function createChat(req, res) {
     console.log('createChat: req.body =', req.body);
     console.log('createChat: req.user =', req.user);
     
-    // chatId único: usar timestamp + user id como prefijo si existe
-    const userId = req.user ? req.user.id : null;
-    const prefix = userId ? String(userId) : 'anon';
+    // Resolver el id real del usuario en BD (el JWT puede contener integer o UUID)
+    const jwtId = req.user ? req.user.id : null;
+    let userId = null;
+    if (jwtId) {
+      const foundUser = await User.findOne({ where: { [Op.or]: [ { id: jwtId }, { id: String(jwtId) } ] } });
+      if (foundUser) userId = String(foundUser.id); // Convertir a string para queries en tabla chats
+    }
+    const prefix = userId ? userId : 'anon';
     const chatId = `chat_${prefix}_${Date.now()}`;
     
     console.log('createChat: Creating chat with chatId =', chatId, 'clientId =', userId, 'professionalId =', professionalId);
@@ -66,8 +71,12 @@ export async function postChatMessage(req, res) {
 // Listar chats del cliente actual
 export async function listClientChats(req, res) {
   try {
-    const userId = req.user ? req.user.id : null;
-    if (!userId) return res.status(401).json({ message: 'Usuario no autenticado' });
+    // Resolver id del usuario en BD (aceptar JWT con id numérico o UUID)
+    const jwtId = req.user ? req.user.id : null;
+    if (!jwtId) return res.status(401).json({ message: 'Usuario no autenticado' });
+    const foundUser = await User.findOne({ where: { [Op.or]: [ { id: jwtId }, { id: String(jwtId) } ] } });
+    if (!foundUser) return res.status(401).json({ message: 'Usuario no autenticado' });
+    const userId = String(foundUser.id); // Convertir a string para compatibilidad con campos STRING en tabla chats
 
     const chats = await Chat.findAll({
       where: { clientId: userId },
@@ -113,8 +122,11 @@ export async function listClientChats(req, res) {
 // Listar TODAS las conversaciones del cliente (chats pre-reserva + reservas formales)
 export async function listAllConversations(req, res) {
   try {
-    const userId = req.user ? req.user.id : null;
-    if (!userId) return res.status(401).json({ message: 'Usuario no autenticado' });
+    const jwtId = req.user ? req.user.id : null;
+    if (!jwtId) return res.status(401).json({ message: 'Usuario no autenticado' });
+    const foundUser = await User.findOne({ where: { [Op.or]: [ { id: jwtId }, { id: String(jwtId) } ] } });
+    if (!foundUser) return res.status(401).json({ message: 'Usuario no autenticado' });
+    const userId = String(foundUser.id); // Convertir a string para compatibilidad con campos STRING en tabla chats
 
     // Obtener chats pre-reserva del cliente
     const chatsPreReserva = await Chat.findAll({
@@ -195,8 +207,8 @@ export async function listAllConversations(req, res) {
 
     return res.json(allConversations);
   } catch (err) {
-    console.error('listAllConversations error', err);
-    return res.status(500).json({ message: 'Error listando conversaciones' });
+    console.error('listAllConversations error', err.message, err.stack);
+    return res.status(500).json({ message: 'Error listando conversaciones', error: err.message });
   }
 }
 
@@ -213,8 +225,8 @@ export async function markMessageAsRead(req, res) {
 
     return res.json({ id: message.id, readStatus: message.readStatus });
   } catch (err) {
-    console.error('markMessageAsRead error', err);
-    return res.status(500).json({ message: 'Error marcando mensaje como leído' });
+    console.error('markMessageAsRead error', err.message, err.stack);
+    return res.status(500).json({ message: 'Error marcando mensaje como leído', error: err.message });
   }
 }
 
@@ -268,8 +280,8 @@ export async function convertChatToReservation(req, res) {
     console.log('convertChatToReservation: Converted chat', chat.id, 'to reservation', reservation.id);
     return res.json({ reservationId: reservation.id, serviceRequestId: serviceRequest.id });
   } catch (err) {
-    console.error('convertChatToReservation error', err);
-    return res.status(500).json({ message: 'Error convirtiendo chat' });
+    console.error('convertChatToReservation error', err.message, err.stack);
+    return res.status(500).json({ message: 'Error convirtiendo chat', error: err.message });
   }
 }
 
