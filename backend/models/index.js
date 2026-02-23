@@ -186,6 +186,12 @@ Message.belongsTo(Reservation, { foreignKey: 'reservationId' }); // relación in
 Chat.hasMany(Message, { foreignKey: 'chatId', sourceKey: 'id' });
 Message.belongsTo(Chat, { foreignKey: 'chatId', targetKey: 'id' });
 
+// Relaciones entre Chat y User (profesional)
+Chat.belongsTo(User, { as: 'professionalUser', foreignKey: 'professionalId' });
+User.hasMany(Chat, { as: 'chatsAsProfessional', foreignKey: 'professionalId' });
+Chat.belongsTo(User, { as: 'clientUser', foreignKey: 'clientId' });
+User.hasMany(Chat, { as: 'chatsAsClient', foreignKey: 'clientId' });
+
 // ✅ Relaciones para ProfessionalOffers
 User.hasMany(ProfessionalOffer, { as: 'offers', foreignKey: 'professionalId' });
 ProfessionalOffer.belongsTo(User, { as: 'professional', foreignKey: 'professionalId' });

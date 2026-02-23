@@ -63,15 +63,72 @@ export async function postChatMessage(req, res) {
   }
 }
 
+// Listar chats del cliente actual
+export async function listClientChats(req, res) {
+  try {
+    const userId = req.user ? req.user.id : null;
+    if (!userId) return res.status(401).json({ message: 'Usuario no autenticado' });
+
+    const chats = await Chat.findAll({
+      where: { clientId: userId },
+      include: [
+        {
+          model: User,
+          as: 'professionalUser',
+          attributes: ['id', 'name', 'profilePhotoUrl']
+        }
+      ],
+      order: [['updatedAt', 'DESC']]
+    });
+
+    // Agregar último mensaje para cada chat
+    const chatsWithMessages = await Promise.all(
+      chats.map(async (chat) => {
+        const lastMessage = await Message.findOne({
+          where: { chatId: chat.id },
+          order: [['timestamp', 'DESC']]
+        });
+
+        return {
+          id: chat.id,
+          offerId: chat.offerId,
+          clientId: chat.clientId,
+          professionalId: chat.professionalId,
+          professional: chat.professionalUser,
+          lastMessage: lastMessage?.content || '',
+          lastMessageTime: lastMessage?.timestamp || chat.createdAt,
+          createdAt: chat.createdAt,
+          updatedAt: chat.updatedAt
+        };
+      })
+    );
+
+    return res.json(chatsWithMessages);
+  } catch (err) {
+    console.error('listClientChats error', err);
+    return res.status(500).json({ message: 'Error listando chats' });
+  }
+}
+
 // Convertir chat en solicitud/reserva formal
 export async function convertChatToReservation(req, res) {
   try {
     const { chatId } = req.params;
-    const chat = await Chat.findByPk(chatId);
+    console.log('convertChatToReservation: Attempting to convert chatId:', chatId);
+    
+    // Primero intentar buscar por chatId exacto
+    let chat = await Chat.findByPk(chatId);
+    
+    // Si no existe, intentar buscar por offerId (para compatibilidad cuando se pasa offer.id)
+    if (!chat) {
+      console.log('convertChatToReservation: Chat exact not found, searching by offerId:', chatId);
+      chat = await Chat.findOne({ where: { offerId: chatId } });
+    }
+    
     if (!chat) return res.status(404).json({ message: 'Chat no encontrado' });
 
     // Validar que haya al menos un mensaje en el chat
-    const count = await Message.count({ where: { chatId } });
+    const count = await Message.count({ where: { chatId: chat.id } });
     if (count === 0) return res.status(400).json({ message: 'No hay mensajes en el chat para convertir' });
 
     // El cliente logueado es quien convierte el chat
@@ -80,7 +137,7 @@ export async function convertChatToReservation(req, res) {
     
     if (!clientId) return res.status(401).json({ message: 'Usuario no autenticado' });
 
-    console.log('convertChatToReservation: Converting chat', chatId, 'clientId:', clientId, 'professionalId:', professionalId);
+    console.log('convertChatToReservation: Converting chat', chat.id, 'clientId:', clientId, 'professionalId:', professionalId);
 
     // Crear ServiceRequest y Reservation con estado EN_PROCESO
     const serviceRequest = await ServiceRequest.create({
@@ -112,6 +169,7 @@ export default {
   createChat,
   getChatMessages,
   postChatMessage,
+  listClientChats,
   convertChatToReservation
 };
 
