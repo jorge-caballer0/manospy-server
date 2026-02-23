@@ -5,8 +5,12 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import pg from 'pg';
+import fs from 'fs';
 
 dotenv.config();
+
+const { Pool } = pg;
 
 // Importar sequelize después de cargar variables de entorno
 const { sequelize } = await import('./models/index.js'); // conexión y modelos
@@ -55,19 +59,71 @@ app.get('/', (req, res) => {
   res.send('Servidor ManosPy funcionando 🚀');
 });
 
+// Función para ejecutar migraciones
+async function runMigrations() {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL
+  });
+  const client = await pool.connect();
+  
+  try {
+    console.log('🔄 Ejecutando migraciones...');
+    
+    const migrations = [
+      './migrations/20260219_add_chats_and_chatid.sql',
+      './migrations/20260223_fix_chats_client_id_type.sql'
+    ];
+    
+    for (const migrationFile of migrations) {
+      try {
+        const migrationSQL = fs.readFileSync(migrationFile, 'utf8');
+        console.log(`📋 Ejecutando: ${migrationFile}`);
+        
+        await client.query(migrationSQL);
+        console.log(`✅ ${migrationFile} - Exitosa`);
+      } catch (fileErr) {
+        if (fileErr.code === 'ENOENT') {
+          console.warn(`⚠️ ${migrationFile} - No encontrado, saltando...`);
+        } else if (fileErr.code === '42P07') {
+          console.warn(`⚠️ ${migrationFile} - Tabla ya existe, saltando...`);
+        } else {
+          throw fileErr;
+        }
+      }
+    }
+    
+    console.log('✅ Todas las migraciones completadas');
+  } catch (err) {
+    console.error('❌ Error ejecutando migraciones:', err.message);
+    // No detener el servidor si hay error en migration
+  } finally {
+    client.release();
+    await pool.end();
+  }
+}
+
 // Iniciar servidor
 const PORT = process.env.PORT || 3000; // Render asigna PORT automáticamente
 
-sequelize
-  .sync({ alter: false }) // No modificar tablas existentes para evitar conflictos
-  .then(() => {
+async function startServer() {
+  try {
+    // Ejecutar migraciones primero
+    await runMigrations();
+    
+    // Luego sincronizar sequelize
+    await sequelize.sync({ alter: false });
     console.log("✅ Base de datos sincronizada correctamente");
+    
+    // Finalmente iniciar express
     app.listen(PORT, () => {
       console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
     });
-  })
-  .catch(err => {
-    console.error("❌ Error al sincronizar base de datos:", err);
-  });
+  } catch (err) {
+    console.error("❌ Error al iniciar servidor:", err);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 
