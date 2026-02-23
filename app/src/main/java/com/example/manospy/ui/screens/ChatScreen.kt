@@ -10,13 +10,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.manospy.data.model.Message
+import com.example.manospy.data.local.SessionManager
 import com.example.manospy.ui.navigation.Screen
 import com.example.manospy.ui.viewmodel.ServiceViewModel
 import com.example.manospy.util.NetworkResult
@@ -54,30 +55,61 @@ fun ChatScreen(
     reservationIdOrChatId: String,
     viewModel: ServiceViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val userId = remember { sessionManager.getUserId() }
+    
+    // Debug logging
+    LaunchedEffect(userId) {
+        android.util.Log.d("ChatScreen", "UserId obtenido: $userId")
+    }
+    
     val scope = rememberCoroutineScope()
     val reservationDetail by viewModel.reservationDetail.collectAsState()
     val messages by viewModel.messages.collectAsState()
+    val messageError by viewModel.messageError.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     var messageText by remember { mutableStateOf("") }
     var showRatingScreen by remember { mutableStateOf(false) }
     var chatStartTime by remember { mutableStateOf(System.currentTimeMillis()) }
-
-    // Cargar datos al iniciar: intentar como reservationId, si falla usar chatId
-    LaunchedEffect(reservationIdOrChatId) {
-        // Intentar cargar detalle de reserva
-        viewModel.fetchReservationDetail(reservationIdOrChatId)
-
-        // Esperar a que termine de cargar (o falle)
-        while (viewModel.reservationDetailLoading.value) {
-            kotlinx.coroutines.delay(50)
+    
+    // Mostrar error en Snackbar si hay
+    LaunchedEffect(messageError) {
+        if (messageError != null) {
+            snackbarHostState.showSnackbar(
+                message = messageError ?: "Error al enviar mensaje",
+                duration = SnackbarDuration.Short
+            )
+            viewModel.clearMessageError()
         }
+    }
 
-        if (viewModel.reservationDetail.value != null) {
-            // Es una reserva formal
-            viewModel.fetchMessages(reservationIdOrChatId)
-        } else {
-            // Probablemente es un chatId (oferta no formalizada)
+    // Cargar datos al iniciar: detectar si es chatId o reservationId
+    LaunchedEffect(reservationIdOrChatId) {
+        android.util.Log.d("ChatScreen", "LaunchedEffect: ID=$reservationIdOrChatId")
+        
+        if (reservationIdOrChatId.startsWith("chat_")) {
+            // Es un chatId (formato: chat_10_1234567890)
+            android.util.Log.d("ChatScreen", "Detectado como chatId, cargando mensajes del chat")
             viewModel.fetchChatMessages(reservationIdOrChatId)
+        } else {
+            // Asumir que es un reservationId, intentar cargarlo
+            android.util.Log.d("ChatScreen", "Intentando cargar como reservationId")
+            viewModel.fetchReservationDetail(reservationIdOrChatId)
+
+            // Esperar brevemente a que termine
+            kotlinx.coroutines.delay(100)
+
+            if (viewModel.reservationDetail.value != null) {
+                // Es una reserva formal
+                android.util.Log.d("ChatScreen", "Cargado como reservación, obteniendo mensajes")
+                viewModel.fetchMessages(reservationIdOrChatId)
+            } else {
+                // Probablemente es un chatId que llegó sin el prefijo "chat_"
+                android.util.Log.d("ChatScreen", "No es una reservación, intentando como chatId")
+                viewModel.fetchChatMessages(reservationIdOrChatId)
+            }
         }
     }
 
@@ -85,6 +117,14 @@ fun ChatScreen(
     LaunchedEffect(messages) {
         if (messages is NetworkResult.Success && (messages as NetworkResult.Success<List<Message>>).data.isNotEmpty()) {
             listState.animateScrollToItem((messages as NetworkResult.Success<List<Message>>).data.size - 1)
+            
+            // Marcar mensajes recibidos como leídos
+            val messagesList = (messages as NetworkResult.Success<List<Message>>).data
+            messagesList.forEach { msg ->
+                if (msg.senderId != userId && msg.readStatus != "read") {
+                    viewModel.markMessageAsRead(msg.id)
+                }
+            }
         }
     }
 
@@ -110,12 +150,17 @@ fun ChatScreen(
         // Mantener sincronización de status bar con la cabecera
         SyncStatusBarWithHeader(headerColor = CorporateBlue)
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF8FAFC))
-                .padding(innerPadding)
-        ) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            modifier = Modifier.fillMaxSize()
+        ) { snackbarPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF8FAFC))
+                    .padding(innerPadding)
+                    .padding(snackbarPadding)
+            ) {
             when (val msgResult = messages) {
                 is NetworkResult.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -160,7 +205,7 @@ fun ChatScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(msgResult.data) { message ->
-                                ChatBubble(message, reservationDetail?.clientId ?: "")
+                                ChatBubble(message, userId)
                             }
                         }
                     }
@@ -177,105 +222,101 @@ fun ChatScreen(
                 else -> {}
             }
 
-            // Bottom actions & input (migrado desde bottomBar)
+            // Bottom actions & input
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White)
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                // Acciones superior (minimalista y compacta)
+                Surface(
+                    color = Color(0xFFF8FAFC),
+                    shadowElevation = 2.dp
                 ) {
-                    // Nuevo: botón para convertir chat en solicitud formal
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                val result = viewModel.convertChatToReservation(reservationIdOrChatId)
-                                if (result is NetworkResult.Success) {
-                                    val reservationId = result.data.reservationId
-                                    // Navegar al chat formal asociado a la reserva
-                                    navController.navigate(Screen.Chat.createRoute(reservationId))
-                                } else {
-                                    // mostrar error simple
-                                    android.util.Log.e("ChatScreen", "Error al convertir chat: ${(result as? NetworkResult.Error)?.message}")
-                                }
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(text = "Convertir en solicitud", fontSize = 10.sp)
-                        }
-                    }
-
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                if (viewModel.reservationDetail.value != null) {
-                                    navController.navigate(Screen.ReservationAccepted.createRoute(reservationIdOrChatId))
-                                } else {
-                                    val result = viewModel.convertChatToReservation(reservationIdOrChatId)
-                                    if (result is NetworkResult.Success) {
-                                        val reservationId = result.data.reservationId
-                                        navController.navigate(Screen.ReservationAccepted.createRoute(reservationId))
+                        // Botón Confirmar (primario)
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    if (viewModel.reservationDetail.value != null) {
+                                        navController.navigate(com.example.manospy.ui.navigation.Screen.ReservationAccepted.createRoute(reservationIdOrChatId))
                                     } else {
-                                        android.util.Log.e("ChatScreen", "Error al convertir chat: ${(result as? NetworkResult.Error)?.message}")
+                                        // Convertir chat a reservación
+                                        val result = viewModel.convertChatToReservation(reservationIdOrChatId)
+                                        if (result is NetworkResult.Success) {
+                                            val reservationId = result.data.reservationId
+                                            // Cambiar estado a IN_PROGRESS porque ya se coordinó en el chat
+                                            viewModel.updateReservationStatus(reservationId, "IN_PROGRESS")
+                                            // Esperar un poco para que se procese
+                                            kotlinx.coroutines.delay(500)
+                                            navController.navigate(com.example.manospy.ui.navigation.Screen.ReservationAccepted.createRoute(reservationId))
+                                        } else {
+                                            android.util.Log.e("ChatScreen", "Error al convertir chat: ${(result as? NetworkResult.Error)?.message}")
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0056D2)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                            },
+                            modifier = Modifier
+                                .height(40.dp)
+                                .weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0056D2)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                         ) {
                             Icon(
                                 Icons.Default.CheckCircle,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(16.dp),
+                                tint = Color.White
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Confirmar",
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                fontSize = 10.sp
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        // Botón Cancelar (secundario)
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    if (viewModel.reservationDetail.value != null) {
+                                        viewModel.cancelReservation(reservationIdOrChatId)
+                                    }
+                                    navController.popBackStack()
+                                }
+                            },
+                            modifier = Modifier
+                                .height(40.dp)
+                                .weight(1f),
+                            border = BorderStroke(1.dp, Color(0xFFDC2626).copy(alpha = 0.5f)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Cancelar",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                fontSize = 11.sp
                             )
                         }
                     }
-
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                if (viewModel.reservationDetail.value != null) {
-                                    viewModel.cancelReservation(reservationIdOrChatId)
-                                }
-                                navController.popBackStack()
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        border = BorderStroke(2.dp, Color(0xFFDC2626).copy(alpha = 0.3f)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "Cancelar",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            fontSize = 10.sp
-                        )
-                    }
                 }
 
-                // Campo de mensaje
+                // Campo de mensaje (mejorado)
                 Surface(
                     color = Color.White,
                     shadowElevation = 6.dp
@@ -287,18 +328,6 @@ fun ChatScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        IconButton(
-                            onClick = { /* Adjuntar */ },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Adjuntar",
-                                tint = Color(0xFF137FEC),
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
                         TextField(
                             value = messageText,
                             onValueChange = { messageText = it },
@@ -330,22 +359,22 @@ fun ChatScreen(
 
                         IconButton(
                             onClick = {
-                                    if (messageText.isNotBlank()) {
-                                        if (viewModel.reservationDetail.value != null) {
-                                            viewModel.sendMessage(reservationIdOrChatId, messageText)
-                                        } else {
-                                            viewModel.sendChatMessage(reservationIdOrChatId, messageText)
-                                        }
-                                        messageText = ""
+                                if (messageText.isNotBlank()) {
+                                    if (viewModel.reservationDetail.value != null) {
+                                        viewModel.sendMessage(reservationIdOrChatId, messageText, userId)
+                                    } else {
+                                        viewModel.sendChatMessage(reservationIdOrChatId, messageText, userId)
                                     }
+                                    messageText = ""
+                                }
                             },
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(46.dp)
                                 .background(Color(0xFF137FEC), CircleShape),
                             colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White)
                         ) {
                             Icon(
-                                Icons.Default.Send,
+                                Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Enviar",
                                 modifier = Modifier.size(20.dp)
                             )
@@ -354,6 +383,7 @@ fun ChatScreen(
                 }
             }
         }
+    }
     }
 }
 
@@ -420,15 +450,35 @@ fun ChatBubble(message: Message, clientId: String) {
 
             if (isOwn) {
                 Spacer(modifier = Modifier.width(4.dp))
+                // Tildes de lectura (solo en mensajes propios)
+                val readStatusText = when (message.readStatus) {
+                    "read" -> "✓✓" // dos tildes (leído)
+                    "delivered" -> "✓" // un tilde (entregado)
+                    else -> "•" // punto para enviado
+                }
+                Text(
+                    text = readStatusText,
+                    fontSize = 9.sp,
+                    color = if (message.readStatus == "read") brandBlue else Color(0xFF64748B),
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.Bottom)
+                )
             }
         }
 
-        Text(
-            text = formatMessageTime(message.timestamp),
-            fontSize = 10.sp,
-            color = Color(0xFF64748B),
-            modifier = Modifier.padding(top = 4.dp, start = if (isOwn) 0.dp else 32.dp, end = if (isOwn) 32.dp else 0.dp)
-        )
+        Row(
+            modifier = Modifier
+                .padding(top = 4.dp, start = if (isOwn) 0.dp else 32.dp, end = if (isOwn) 32.dp else 0.dp)
+                .align(if (isOwn) Alignment.End else Alignment.Start),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = formatMessageTime(message.timestamp),
+                fontSize = 10.sp,
+                color = Color(0xFF64748B)
+            )
+        }
     }
 }
 

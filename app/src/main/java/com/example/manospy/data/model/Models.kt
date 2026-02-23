@@ -62,12 +62,15 @@ data class ProfessionalOffer(
     val location: String? = null,
     val price: String? = null,
     val currency: String = "ARS",
-    val availability: Map<String, Any>? = null,
+    @Transient val availability: String? = null,  // ✅ CORREGIDO: @Transient para ignorar deserialization
     val status: String = "active",
     val image_url: String? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
-    val professional: User? = null  // Datos del profesional que ofrece
+    val professional: User? = null,  // Datos del profesional que ofrece
+    // Propiedades derivadas para UI: movidas a `ProfessionalOfferExt.kt` como extensiones
+    // (evita duplicar getters/val que pueden causar conflictos en la compilación)
+    
 )
 
 data class ProfessionalOffersResponse(
@@ -118,7 +121,8 @@ data class Message(
     val chatId: String?,
     val senderId: String,
     val content: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val readStatus: String? = "sent" // "sent", "delivered", "read"
 )
 
 data class LoginResponse(
@@ -251,4 +255,24 @@ data class CreateChatResponse(
 data class ConvertChatResponse(
     val reservationId: String,
     val serviceRequestId: String
+)
+
+data class ChatListItem(
+    val id: String,
+    val type: String, // "chat" o "reservation"
+    val offerId: String?,
+    val reservationId: String?,
+    val lastMessage: String,
+    val lastMessageTime: Long,
+    val lastMessageReadStatus: String?, // "sent", "delivered", "read"
+    val professional: User?
+)
+
+data class ConversationItem(
+    val id: String,
+    val type: String,
+    val name: String,
+    val lastMessage: String,
+    val lastMessageReadStatus: String?,
+    val avatar: String?
 )

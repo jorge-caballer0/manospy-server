@@ -23,6 +23,8 @@ import com.example.manospy.data.model.User
 import com.example.manospy.data.model.CreateChatRequest
 import com.example.manospy.data.model.CreateChatResponse
 import com.example.manospy.data.model.ConvertChatResponse
+import com.example.manospy.data.model.ProfessionalOffer
+import com.example.manospy.data.model.ProfessionalOffersResponse
 import retrofit2.Response
 import retrofit2.http.HTTP
 import retrofit2.http.Body
@@ -256,7 +258,19 @@ interface ApiService {
     @POST("chats")
     suspend fun createChat(@Body request: CreateChatRequest): Response<CreateChatResponse>
 
+    @GET("chats")
+    suspend fun listConversations(): Response<List<ChatListItem>>
+
     @GET("chats/{chatId}/messages")
+    suspend fun getChatMessages(@Path("chatId") chatId: String): Response<List<Message>>
+
+    @POST("chats/{chatId}/messages")
+    suspend fun postChatMessage(@Path("chatId") chatId: String, @Body message: MessageInput): Response<Message>
+
+    @PUT("chats/{messageId}/read")
+    suspend fun markMessageAsRead(@Path("messageId") messageId: String): Response<Message>
+
+    @POST("chats/{chatId}/convert")
     suspend fun getChatMessages(@Path("chatId") chatId: String): Response<List<Message>>
 
     @POST("chats/{chatId}/messages")
@@ -268,6 +282,30 @@ interface ApiService {
     // Endpoint para calificación de soporte
     @POST("soporte")
     suspend fun rateSupport(@Body body: Map<String, Any>): Response<Unit>
+
+    // ---------- PROFESSIONAL OFFERS ----------
+    @GET("offers")
+    suspend fun getOffers(
+        @Query("category") category: String? = null,
+        @Query("location") location: String? = null,
+        @Query("page") page: Int? = null,
+        @Query("limit") limit: Int? = null
+    ): Response<ProfessionalOffersResponse>
+
+    @GET("offers/{offerId}")
+    suspend fun getOfferDetail(@Path("offerId") offerId: String): Response<ProfessionalOffer>
+
+    @POST("offers")
+    suspend fun createOffer(@Body offer: ProfessionalOffer): Response<ProfessionalOffer>
+
+    @PUT("offers/{offerId}")
+    suspend fun updateOffer(
+        @Path("offerId") offerId: String,
+        @Body offer: ProfessionalOffer
+    ): Response<ProfessionalOffer>
+
+    @HTTP(method = "DELETE", path = "offers/{offerId}", hasBody = false)
+    suspend fun deleteOffer(@Path("offerId") offerId: String): Response<Unit>
 
     // ---------- ADDRESSES ----------
     @POST("addresses")

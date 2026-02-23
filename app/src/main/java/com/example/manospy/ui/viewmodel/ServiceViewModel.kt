@@ -9,6 +9,9 @@ import com.example.manospy.data.model.MessageInput
 import com.example.manospy.data.model.CreateChatRequest
 import com.example.manospy.data.model.CreateChatResponse
 import com.example.manospy.data.model.ConvertChatResponse
+import com.example.manospy.data.model.ChatListItem
+import com.example.manospy.data.model.ProfessionalOffer
+import com.example.manospy.data.model.ProfessionalOffersResponse
 import com.example.manospy.data.model.RatingRequest
 import com.example.manospy.data.model.ReputationResponse
 import com.example.manospy.data.model.Reservation
@@ -424,6 +427,23 @@ class ServiceViewModel : ViewModel() {
     private val _messages = MutableStateFlow<NetworkResult<List<Message>>>(NetworkResult.Loading)
     val messages: StateFlow<NetworkResult<List<Message>>> = _messages
 
+    private val _messageError = MutableStateFlow<String?>(null)
+    val messageError: StateFlow<String?> = _messageError
+
+    private val _chats = MutableStateFlow<NetworkResult<List<ChatListItem>>>(NetworkResult.Loading)
+    val chats: StateFlow<NetworkResult<List<ChatListItem>>> = _chats
+
+    fun clearMessageError() {
+        _messageError.value = null
+    }
+
+    fun fetchChats() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _chats.value = NetworkResult.Loading
+            _chats.value = safeApiCall { api.listConversations() }
+        }
+    }
+
     fun fetchMessages(reservationId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _messages.value = NetworkResult.Loading
@@ -431,11 +451,25 @@ class ServiceViewModel : ViewModel() {
         }
     }
 
-    fun sendMessage(reservationId: String, text: String) {
+    fun sendMessage(reservationId: String, text: String, userId: String?) {
         viewModelScope.launch(Dispatchers.IO) {
-            val result = safeApiCall { api.sendMessage(reservationId, MessageInput("", text)) }
+            val senderId = userId ?: ""
+            android.util.Log.d("ServiceViewModel", """
+                Enviando mensaje a reservación:
+                reservationId: $reservationId
+                text: $text
+                userId: $userId
+                senderId (a enviar): $senderId
+            """.trimIndent())
+            
+            val messageInput = MessageInput(senderId, text)
+            val result = safeApiCall { api.sendMessage(reservationId, messageInput) }
             if (result is NetworkResult.Success) {
+                _messageError.value = null
                 fetchMessages(reservationId)
+            } else if (result is NetworkResult.Error) {
+                _messageError.value = result.message ?: "Error al enviar mensaje"
+                android.util.Log.e("ServiceViewModel", "Error sending message: ${result.message}")
             }
         }
     }
@@ -465,11 +499,27 @@ class ServiceViewModel : ViewModel() {
         }
     }
 
-    fun sendChatMessage(chatId: String, text: String) {
+    fun sendChatMessage(chatId: String, text: String, userId: String?) {
         viewModelScope.launch(Dispatchers.IO) {
-            val result = safeApiCall { api.postChatMessage(chatId, MessageInput("", text)) }
+            val senderId = userId ?: ""
+            android.util.Log.d("ServiceViewModel", """
+                Enviando mensaje:
+                chatId: $chatId
+                text: $text
+                userId: $userId
+                senderId (a enviar): $senderId
+            """.trimIndent())
+            
+            val messageInput = MessageInput(senderId, text)
+            android.util.Log.d("ServiceViewModel", "MessageInput JSON: senderId='${messageInput.senderId}', content='${messageInput.content}'")
+            
+            val result = safeApiCall { api.postChatMessage(chatId, messageInput) }
             if (result is NetworkResult.Success) {
+                _messageError.value = null
                 fetchChatMessages(chatId)
+            } else if (result is NetworkResult.Error) {
+                _messageError.value = result.message ?: "Error al enviar mensaje"
+                android.util.Log.e("ServiceViewModel", "Error sending chat message: ${result.message}")
             }
         }
     }
@@ -478,6 +528,12 @@ class ServiceViewModel : ViewModel() {
         withContext(Dispatchers.IO) {
             safeApiCall { api.convertChat(chatId) }
         }
+
+    fun markMessageAsRead(messageId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            safeApiCall { api.markMessageAsRead(messageId) }
+        }
+    }
 
     fun submitReview(reservationId: String, rating: Int, reviewText: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -531,26 +587,59 @@ class ServiceViewModel : ViewModel() {
     // ==========================
     // Ofertas de profesionales
     // ==========================
+    private val _professionalOffers = MutableStateFlow<NetworkResult<List<ProfessionalOffer>>>(NetworkResult.Loading)
+    val professionalOffers: StateFlow<NetworkResult<List<ProfessionalOffer>>> = _professionalOffers
+
+    fun fetchOffers(category: String? = null, location: String? = null) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _professionalOffers.value = NetworkResult.Loading
+            val result: NetworkResult<ProfessionalOffersResponse> = safeApiCall { api.getOffers(category, location, page = 1, limit = 10) }
+            
+            when (result) {
+                is NetworkResult.Success -> {
+                    _professionalOffers.value = NetworkResult.Success(result.data.offers ?: emptyList())
+                    android.util.Log.d("ServiceViewModel", "Offers loaded: ${result.data.offers?.size ?: 0} offers")
+                }
+                is NetworkResult.Error -> {
+                    _professionalOffers.value = NetworkResult.Error(result.message)
+                    android.util.Log.e("ServiceViewModel", "Error fetching offers: ${result.message}")
+                }
+                else -> {
+                    _professionalOffers.value = NetworkResult.Error("Unknown error")
+                }
+            }
+        }
+    }
+
     fun getOffers(): List<ProfessionalOffer> {
-        // Si existe una última solicitud creada, devolverla como ejemplo de oferta
+        // Obtener ofertas del backend si están disponibles
+        val backendOffers = (_professionalOffers.value as? NetworkResult.Success)?.data ?: emptyList()
+        
+        // Si tenemos ofertas del backend, devolverlas directamente
+        if (backendOffers.isNotEmpty()) {
+            return backendOffers
+        }
+
+        // Fallback a comportamiento anterior si no hay ofertas cargadas
         val last = _lastCreatedRequest.value
         if (last != null) {
+            // Crear una oferta simplificada como fallback
             return listOf(
                 ProfessionalOffer(
                     id = last.id,
-                    clientName = last.clientName ?: "Cliente",
-                    serviceName = last.category,
-                    budget = "Gs. 0"
+                    professionalId = "0",
+                    title = last.category,
+                    description = "",
+                    category = last.category,
+                    location = last.location,
+                    price = "0",
+                    currency = "ARS"
                 )
             )
         }
 
-        // Fallback: ofertas de ejemplo para mostrar tarjetas en el Home
-        return listOf(
-            ProfessionalOffer(id = "offer1", clientName = "María G.", serviceName = "Plomería - Reparación", budget = "Gs. 150.000", clientRating = 4.8, reviewCount = 12, urgency = "Hoy"),
-            ProfessionalOffer(id = "offer2", clientName = "Carlos R.", serviceName = "Electricidad - Instalación", budget = "Gs. 220.000", clientRating = 4.6, reviewCount = 8, urgency = "24h"),
-            ProfessionalOffer(id = "offer3", clientName = "Luisa M.", serviceName = "Aire Acondicionado - Mantenimiento", budget = "Gs. 180.000", clientRating = 4.9, reviewCount = 20, urgency = "Hoy")
-        )
+        // Sin ofertas - devolver lista vacía
+        return emptyList()
     }
 
 
@@ -665,14 +754,3 @@ class ServiceViewModel : ViewModel() {
     }
 }
 
-// Modelo simple para ofertas
-data class ProfessionalOffer(
-    val id: String = "",
-    val clientName: String = "",
-    val serviceName: String = "",
-    val budget: String = "",
-    val clientRating: Double = 0.0,
-    val reviewCount: Int = 0,
-    val urgency: String = "",
-    val avatarUrl: String = ""
-)

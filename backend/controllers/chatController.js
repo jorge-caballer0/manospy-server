@@ -110,6 +110,114 @@ export async function listClientChats(req, res) {
   }
 }
 
+// Listar TODAS las conversaciones del cliente (chats pre-reserva + reservas formales)
+export async function listAllConversations(req, res) {
+  try {
+    const userId = req.user ? req.user.id : null;
+    if (!userId) return res.status(401).json({ message: 'Usuario no autenticado' });
+
+    // Obtener chats pre-reserva del cliente
+    const chatsPreReserva = await Chat.findAll({
+      where: { clientId: userId },
+      include: [
+        {
+          model: User,
+          as: 'professionalUser',
+          attributes: ['id', 'name', 'profilePhotoUrl']
+        }
+      ],
+      order: [['updatedAt', 'DESC']]
+    });
+
+    // Para cada chat pre-reserva, obtener último mensaje
+    const chatsWithMessages = await Promise.all(
+      chatsPreReserva.map(async (chat) => {
+        const lastMessage = await Message.findOne({
+          where: { chatId: chat.id },
+          order: [['timestamp', 'DESC']]
+        });
+
+        return {
+          id: chat.id,
+          type: 'chat', // tipo: pre-reserva
+          offerId: chat.offerId,
+          reservationId: null,
+          professional: chat.professionalUser,
+          lastMessage: lastMessage?.content || '',
+          lastMessageTime: lastMessage?.timestamp || chat.createdAt,
+          lastMessageReadStatus: lastMessage?.readStatus || 'sent',
+          createdAt: chat.createdAt,
+          updatedAt: chat.updatedAt
+        };
+      })
+    );
+
+    // Obtener reservas del cliente (formales)
+    const reservations = await Reservation.findAll({
+      where: { clientId: userId },
+      include: [
+        {
+          model: User,
+          as: 'professional',
+          attributes: ['id', 'name', 'profilePhotoUrl']
+        }
+      ],
+      order: [['updatedAt', 'DESC']]
+    });
+
+    // Para cada reserva, obtener último mensaje
+    const reservationsWithMessages = await Promise.all(
+      reservations.map(async (reservation) => {
+        const lastMessage = await Message.findOne({
+          where: { reservationId: reservation.id },
+          order: [['timestamp', 'DESC']]
+        });
+
+        return {
+          id: reservation.id,
+          type: 'reservation', // tipo: reserva formal
+          offerId: null,
+          reservationId: reservation.id,
+          professional: reservation.professional,
+          lastMessage: lastMessage?.content || '',
+          lastMessageTime: lastMessage?.timestamp || reservation.createdAt,
+          lastMessageReadStatus: lastMessage?.readStatus || 'sent',
+          createdAt: reservation.createdAt,
+          updatedAt: reservation.updatedAt
+        };
+      })
+    );
+
+    // Combinar y ordenar por última actualización (más reciente primero)
+    const allConversations = [...chatsWithMessages, ...reservationsWithMessages].sort(
+      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+    );
+
+    return res.json(allConversations);
+  } catch (err) {
+    console.error('listAllConversations error', err);
+    return res.status(500).json({ message: 'Error listando conversaciones' });
+  }
+}
+
+// Marcar un mensaje como leído
+export async function markMessageAsRead(req, res) {
+  try {
+    const { messageId } = req.params;
+    const message = await Message.findByPk(messageId);
+    
+    if (!message) return res.status(404).json({ message: 'Mensaje no encontrado' });
+
+    // Actualizar estado a leído
+    await message.update({ readStatus: 'read' });
+
+    return res.json({ id: message.id, readStatus: message.readStatus });
+  } catch (err) {
+    console.error('markMessageAsRead error', err);
+    return res.status(500).json({ message: 'Error marcando mensaje como leído' });
+  }
+}
+
 // Convertir chat en solicitud/reserva formal
 export async function convertChatToReservation(req, res) {
   try {
@@ -155,9 +263,9 @@ export async function convertChatToReservation(req, res) {
     });
 
     // Asociar mensajes del chat a la nueva reserva (set reservationId)
-    await Message.update({ reservationId: reservation.id }, { where: { chatId } });
+    await Message.update({ reservationId: reservation.id }, { where: { chatId: chat.id } });
 
-    console.log('convertChatToReservation: Converted chat', chatId, 'to reservation', reservation.id);
+    console.log('convertChatToReservation: Converted chat', chat.id, 'to reservation', reservation.id);
     return res.json({ reservationId: reservation.id, serviceRequestId: serviceRequest.id });
   } catch (err) {
     console.error('convertChatToReservation error', err);
@@ -170,6 +278,8 @@ export default {
   getChatMessages,
   postChatMessage,
   listClientChats,
+  listAllConversations,
+  markMessageAsRead,
   convertChatToReservation
 };
 

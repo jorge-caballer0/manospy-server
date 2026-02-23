@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,13 +17,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
 import com.example.manospy.util.NetworkResult
 import com.example.manospy.data.model.Message
+import com.example.manospy.data.model.ChatListItem
 import com.example.manospy.ui.viewmodel.ServiceViewModel
 import com.example.manospy.ui.components.SimpleLocationSearchField
 import com.example.manospy.ui.components.AppScaffold
@@ -55,43 +59,29 @@ fun ChatListScreen(
     val cardBg = AppColors.BgWhite
     val context = LocalContext.current
 
-    // Cargar datos reales del ViewModel si está disponible
-    val messagesResult = if (serviceViewModel != null) {
-        serviceViewModel.messages.collectAsState(initial = NetworkResult.Loading).value
+    // Cargar chats reales del ViewModel
+    val chatsResult = if (serviceViewModel != null) {
+        serviceViewModel.chats.collectAsState(initial = NetworkResult.Loading).value
     } else {
         NetworkResult.Loading
     }
-    
-    // Transformar mensajes en chats únicos
-    val chatList = remember(messagesResult) {
-        when (messagesResult) {
+
+    // Cargar chats al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        serviceViewModel?.fetchChats()
+    }
+
+    // Extraer lista de chats del resultado
+    val chatList = remember(chatsResult) {
+        when (chatsResult) {
             is NetworkResult.Success<*> -> {
                 try {
-                    val messages = (messagesResult as NetworkResult.Success<List<Message>>).data
-                    if (messages.isEmpty()) {
-                        emptyList()
-                    } else {
-                        messages
-                            .groupBy { it.senderId }
-                            .map { (senderId, msgs) ->
-                                val lastMsg = msgs.lastOrNull()
-                                ChatItem(
-                                    id = senderId,
-                                    name = "Usuario ${senderId.take(4)}",
-                                    lastMessage = lastMsg?.content ?: "",
-                                    timestamp = formatTimestamp(lastMsg?.timestamp ?: 0),
-                                    unread = 0
-                                )
-                            }
-                    }
+                    (chatsResult as NetworkResult.Success<List<ChatListItem>>).data
                 } catch (e: Exception) {
                     emptyList()
                 }
             }
-            else -> {
-                // No mostrar datos de demostración - esperar a que carguen datos reales
-                emptyList()
-            }
+            else -> emptyList()
         }
     }
 
@@ -103,7 +93,7 @@ fun ChatListScreen(
             chatList
         } else {
             chatList.filter { chat ->
-                chat.name.contains(searchQuery, ignoreCase = true) ||
+                (chat.professional?.name ?: "").contains(searchQuery, ignoreCase = true) ||
                 chat.lastMessage.contains(searchQuery, ignoreCase = true)
             }
         }
@@ -113,80 +103,107 @@ fun ChatListScreen(
         // Mantener sincronización de status bar con color de cabecera
         SyncStatusBarWithHeader(headerColor = Color(0xFF2563EB))
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Barra de búsqueda mejorada
-            item {
-                SimpleLocationSearchField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = "Buscar conversación...",
-                    enabled = true,
-                    leadingIconType = "search"  // Usar icono de búsqueda en lugar de ubicación
-                )
-            }
-
-            if (chatList.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = AppDimensions.SpaceXLarge),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                "📭",
-                                fontSize = 48.sp
-                            )
-                            Text(
-                                "Sin conversaciones aún",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = textPrimary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                "Tus chats aparecerán aquí",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = textSecondary
-                            )
-                        }
-                    }
+        when (chatsResult) {
+            is NetworkResult.Loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = primaryBlue)
                 }
-            } else {
-                if (filteredChats.isEmpty()) {
+            }
+            is NetworkResult.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Error al cargar mensajes",
+                        color = Color.Red
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Barra de búsqueda mejorada
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "No se encontraron mensajes",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = textSecondary
-                            )
-                        }
-                    }
-                } else {
-                    items(filteredChats) { chat ->
-                        ChatItemRow(
-                            chat = chat, 
-                            brandBlue = brandBlue, 
-                            cardBg = cardBg, 
-                            textPrimary = textPrimary, 
-                            textSecondary = textSecondary,
-                            navController = navController
+                        SimpleLocationSearchField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = "Buscar conversación...",
+                            enabled = true,
+                            leadingIconType = "search"  // Usar icono de búsqueda en lugar de ubicación
                         )
+                    }
+
+                    if (chatList.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = AppDimensions.SpaceXLarge),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        "📭",
+                                        fontSize = 48.sp
+                                    )
+                                    Text(
+                                        "Sin conversaciones aún",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = textPrimary,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        "Tus chats aparecerán aquí",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = textSecondary
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        if (filteredChats.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "No se encontraron mensajes",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = textSecondary
+                                    )
+                                }
+                            }
+                        } else {
+                            items(filteredChats) { chat ->
+                                ChatItemRow(
+                                    chat = chat,
+                                    brandBlue = brandBlue,
+                                    cardBg = cardBg,
+                                    textPrimary = textPrimary,
+                                    textSecondary = textSecondary,
+                                    navController = navController
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -194,24 +211,26 @@ fun ChatListScreen(
     }
 }
 
+// Nueva función componible para renderizar items de chat con datos reales
 @Composable
 private fun ChatItemRow(
-    chat: ChatItem,
+    chat: ChatListItem,
     brandBlue: Color,
     cardBg: Color,
     textPrimary: Color,
     textSecondary: Color,
-    navController: androidx.navigation.NavController? = null
+    navController: androidx.navigation.NavController?
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .clickable { 
-                navController?.navigate("chat/${chat.id}")
+            .clickable {
+                navController?.navigate(com.example.manospy.ui.navigation.Screen.Chat.createRoute(chat.id))
             }
-            .shadow(2.dp),
-        color = cardBg
+            .shadow(2.dp, RoundedCornerShape(12.dp)),
+        color = cardBg,
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
@@ -220,87 +239,85 @@ private fun ChatItemRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
+            // Avatar del profesional
             Surface(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(48.dp)
                     .clip(CircleShape),
-                color = brandBlue.copy(alpha = 0.2f)
+                shape = CircleShape,
+                color = Color(0xFFE0E7FF),
+                shadowElevation = 2.dp
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Text(
-                        chat.name.first().toString(),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = brandBlue
-                        )
+                if (chat.professional?.profilePhotoUrl != null) {
+                    AsyncImage(
+                        model = chat.professional.profilePhotoUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
+                } else {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Outlined.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = brandBlue
+                        )
+                    }
                 }
             }
 
-            // Contenido
+            // Datos del chat
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    chat.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        color = textPrimary
-                    ),
-                    maxLines = 1
-                )
-                Text(
-                    chat.lastMessage,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = textSecondary,
-                        fontSize = 12.sp
-                    ),
-                    maxLines = 1
-                )
-            }
-
-            // Tiempo y badge
-            Column(
-                horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    chat.timestamp,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = textSecondary,
-                        fontSize = 11.sp
-                    )
+                    text = chat.professional?.name ?: "Profesional",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = textPrimary,
+                    maxLines = 1
                 )
-                if (chat.unread > 0) {
-                    Surface(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape),
-                        color = Color(0xFFFF6B6B)
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Text(
-                                chat.unread.toString(),
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp
-                                )
-                            )
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Tildes de lectura
+                    val readStatusText = when (chat.lastMessageReadStatus) {
+                        "read" -> "✓✓" // dos tildes (leído)
+                        "delivered" -> "✓" // un tilde (entregado)
+                        else -> "" // sin tilde o enviado
                     }
+                    
+                    if (readStatusText.isNotEmpty()) {
+                        Text(
+                            text = readStatusText,
+                            fontSize = 10.sp,
+                            color = if (chat.lastMessageReadStatus == "read") brandBlue else textSecondary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Text(
+                        text = chat.lastMessage,
+                        fontSize = 12.sp,
+                        color = textSecondary,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
+
+            // Timestamp
+            Text(
+                text = formatTimestamp(chat.lastMessageTime),
+                fontSize = 10.sp,
+                color = textSecondary
+            )
         }
     }
 }
@@ -320,7 +337,7 @@ fun formatTimestamp(timestamp: Long): String {
             diffMins < 60 -> "Hace $diffMins min"
             diffHours < 24 -> "Hace $diffHours h"
             diffDays < 7 -> "Hace $diffDays días"
-            else -> "Hace una semana"
+            else → "Hace una semana"
         }
     }
 }
