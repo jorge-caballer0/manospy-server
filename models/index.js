@@ -92,14 +92,19 @@ const Message = sequelize.define('Message', {
 });
 
 // Chats previos a formalizar (conversaciones iniciadas desde una oferta)
+// Mapear explícitamente a la tabla existente 'chats' y usar snake_case en la BD
 const Chat = sequelize.define('Chat', {
   id: {
     type: DataTypes.STRING,
-    primaryKey: true
+    primaryKey: true,
+    field: 'id'
   },
-  offerId: { type: DataTypes.STRING, allowNull: true },
-  clientId: { type: DataTypes.STRING, allowNull: true },
-  professionalId: { type: DataTypes.STRING, allowNull: true }
+  offerId: { type: DataTypes.STRING, allowNull: true, field: 'offer_id' },
+  clientId: { type: DataTypes.STRING, allowNull: true, field: 'client_id' },
+  professionalId: { type: DataTypes.STRING, allowNull: true, field: 'professional_id' }
+}, {
+  tableName: 'chats',
+  underscored: true
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
