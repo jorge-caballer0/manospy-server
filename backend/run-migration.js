@@ -11,18 +11,32 @@ async function runMigration() {
   const client = await pool.connect();
   
   try {
-    // Read the migration SQL file
-    const migrationSQL = fs.readFileSync('./migrations/20260219_add_chats_and_chatid.sql', 'utf8');
+    // Array of migrations to run in order
+    const migrations = [
+      './migrations/20260219_add_chats_and_chatid.sql',
+      './migrations/20260223_fix_chats_client_id_type.sql'
+    ];
     
-    console.log('Ejecutando migración...');
-    console.log(migrationSQL);
+    for (const migrationFile of migrations) {
+      try {
+        const migrationSQL = fs.readFileSync(migrationFile, 'utf8');
+        console.log(`\n📋 Ejecutando: ${migrationFile}`);
+        console.log(migrationSQL);
+        
+        await client.query(migrationSQL);
+        console.log(`✅ ${migrationFile} - Exitosa`);
+      } catch (fileErr) {
+        if (fileErr.code === 'ENOENT') {
+          console.warn(`⚠️ ${migrationFile} - No encontrado, saltando...`);
+        } else {
+          throw fileErr;
+        }
+      }
+    }
     
-    // Execute the migration
-    await client.query(migrationSQL);
-    
-    console.log('✅ Migración ejecutada exitosamente');
+    console.log('\n✅ Todas las migraciones completadas exitosamente');
   } catch (err) {
-    console.error('❌ Error ejecutando migración:', err.message);
+    console.error('❌ Error ejecutando migraciones:', err.message);
     process.exit(1);
   } finally {
     client.release();
