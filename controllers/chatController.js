@@ -1,4 +1,4 @@
-import { Chat, Message, ServiceRequest, Reservation, User } from '../models/index.js';
+import { Chat, Message, ServiceRequest, Reservation, User, Sequelize } from '../models/index.js';
 import { Op } from 'sequelize';
 
 // Crear un nuevo chat (devuelve chatId)
@@ -66,11 +66,13 @@ export async function postChatMessage(req, res) {
 // Listar chats del cliente actual
 export async function listClientChats(req, res) {
   try {
-    const userId = req.user ? String(req.user.id) : null;
-    if (!userId) return res.status(401).json({ message: 'Usuario no autenticado' });
+    const rawUserId = req.user ? req.user.id : null;
+    if (!rawUserId) return res.status(401).json({ message: 'Usuario no autenticado' });
+
+    const userIdStr = String(rawUserId);
 
     const chats = await Chat.findAll({
-      where: { clientId: userId },
+      where: Sequelize.where(Sequelize.cast(Sequelize.col('client_id'), 'text'), userIdStr),
       include: [
         {
           model: User,
@@ -113,12 +115,14 @@ export async function listClientChats(req, res) {
 // Listar TODAS las conversaciones del cliente (chats pre-reserva + reservas formales)
 export async function listAllConversations(req, res) {
   try {
-    const userId = req.user ? String(req.user.id) : null;
-    if (!userId) return res.status(401).json({ message: 'Usuario no autenticado' });
+    const rawUserId = req.user ? req.user.id : null;
+    if (!rawUserId) return res.status(401).json({ message: 'Usuario no autenticado' });
+
+    const userIdStr = String(rawUserId);
 
     // Obtener chats pre-reserva del cliente
     const chatsPreReserva = await Chat.findAll({
-      where: { clientId: userId },
+      where: Sequelize.where(Sequelize.cast(Sequelize.col('client_id'), 'text'), userIdStr),
       include: [
         {
           model: User,
@@ -153,8 +157,10 @@ export async function listAllConversations(req, res) {
     );
 
     // Obtener reservas del cliente (formales)
+    // Para reservas usamos el id numérico porque la columna clientId es INTEGER
+    const userIdNum = parseInt(rawUserId);
     const reservations = await Reservation.findAll({
-      where: { clientId: userId },
+      where: { clientId: userIdNum },
       include: [
         {
           model: User,
