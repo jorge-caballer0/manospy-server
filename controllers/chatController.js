@@ -73,17 +73,10 @@ export async function listClientChats(req, res) {
 
     const chats = await Chat.findAll({
       where: Sequelize.where(Sequelize.cast(Sequelize.col('client_id'), 'text'), userIdStr),
-      include: [
-        {
-          model: User,
-          as: 'professionalUser',
-          attributes: ['id', 'name', 'profilePhotoUrl']
-        }
-      ],
-      order: [['updatedAt', 'DESC']]
+      order: [['id', 'DESC']]  // No hay updatedAt en tabla chats
     });
 
-    // Agregar último mensaje para cada chat
+    // Agregar último mensaje y datos del profesional para cada chat
     const chatsWithMessages = await Promise.all(
       chats.map(async (chat) => {
         const lastMessage = await Message.findOne({
@@ -91,16 +84,23 @@ export async function listClientChats(req, res) {
           order: [['timestamp', 'DESC']]
         });
 
+        // Buscar el profesional manualmente (sin usar include FK)
+        let professional = null;
+        if (chat.professionalId) {
+          professional = await User.findOne({
+            where: { id: parseInt(chat.professionalId) },
+            attributes: ['id', 'name', 'profilePhotoUrl']
+          });
+        }
+
         return {
           id: chat.id,
           offerId: chat.offerId,
           clientId: chat.clientId,
           professionalId: chat.professionalId,
-          professional: chat.professionalUser,
+          professional: professional,
           lastMessage: lastMessage?.content || '',
-          lastMessageTime: lastMessage?.timestamp || chat.createdAt,
-          createdAt: chat.createdAt,
-          updatedAt: chat.updatedAt
+          lastMessageTime: lastMessage?.timestamp || Date.now()
         };
       })
     );
@@ -123,17 +123,10 @@ export async function listAllConversations(req, res) {
     // Obtener chats pre-reserva del cliente
     const chatsPreReserva = await Chat.findAll({
       where: Sequelize.where(Sequelize.cast(Sequelize.col('client_id'), 'text'), userIdStr),
-      include: [
-        {
-          model: User,
-          as: 'professionalUser',
-          attributes: ['id', 'name', 'profilePhotoUrl']
-        }
-      ],
-      order: [['updatedAt', 'DESC']]
+      order: [['id', 'DESC']]  // No hay updatedAt en tabla chats
     });
 
-    // Para cada chat pre-reserva, obtener último mensaje
+    // Para cada chat pre-reserva, obtener último mensaje y datos profesional
     const chatsWithMessages = await Promise.all(
       chatsPreReserva.map(async (chat) => {
         const lastMessage = await Message.findOne({
@@ -141,17 +134,24 @@ export async function listAllConversations(req, res) {
           order: [['timestamp', 'DESC']]
         });
 
+        // Buscar el profesional manualmente
+        let professional = null;
+        if (chat.professionalId) {
+          professional = await User.findOne({
+            where: { id: parseInt(chat.professionalId) },
+            attributes: ['id', 'name', 'profilePhotoUrl']
+          });
+        }
+
         return {
           id: chat.id,
           type: 'chat', // tipo: pre-reserva
           offerId: chat.offerId,
           reservationId: null,
-          professional: chat.professionalUser,
+          professional: professional,
           lastMessage: lastMessage?.content || '',
-          lastMessageTime: lastMessage?.timestamp || chat.createdAt,
-          lastMessageReadStatus: lastMessage?.readStatus || 'sent',
-          createdAt: chat.createdAt,
-          updatedAt: chat.updatedAt
+          lastMessageTime: lastMessage?.timestamp || Date.now(),
+          lastMessageReadStatus: lastMessage?.readStatus || 'sent'
         };
       })
     );
@@ -186,17 +186,15 @@ export async function listAllConversations(req, res) {
           reservationId: reservation.id,
           professional: reservation.professional,
           lastMessage: lastMessage?.content || '',
-          lastMessageTime: lastMessage?.timestamp || reservation.createdAt,
-          lastMessageReadStatus: lastMessage?.readStatus || 'sent',
-          createdAt: reservation.createdAt,
-          updatedAt: reservation.updatedAt
+          lastMessageTime: lastMessage?.timestamp || Date.now(),
+          lastMessageReadStatus: lastMessage?.readStatus || 'sent'
         };
       })
     );
 
     // Combinar y ordenar por última actualización (más reciente primero)
     const allConversations = [...chatsWithMessages, ...reservationsWithMessages].sort(
-      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+      (a, b) => (new Date(b.lastMessageTime) || 0) - (new Date(a.lastMessageTime) || 0)
     );
 
     return res.json(allConversations);
