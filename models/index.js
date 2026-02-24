@@ -82,12 +82,14 @@ const Message = sequelize.define('Message', {
     autoIncrement: true,
     primaryKey: true
   },
-  reservationId: { type: DataTypes.INTEGER, allowNull: true }, // INTEGER foreign key (nullable for pre-reservation chats)
+  reservationId: { type: DataTypes.INTEGER, allowNull: true, field: 'reservation_id' }, // INTEGER foreign key (nullable for pre-reservation chats)
   chatId: { type: DataTypes.STRING, allowNull: true, field: 'chat_id' }, // chat identifier when message is pre-reservation
-  content: { type: DataTypes.TEXT, allowNull: false }, // ⚠️ corregido
-  senderId: { type: DataTypes.STRING, allowNull: false },
-  timestamp: { type: DataTypes.BIGINT, allowNull: false }
+  content: { type: DataTypes.TEXT, allowNull: false },
+  senderId: { type: DataTypes.STRING, allowNull: false, field: 'sender_id' },
+  timestamp: { type: DataTypes.BIGINT, allowNull: false, field: 'timestamp' },
+  readStatus: { type: DataTypes.STRING, defaultValue: 'unread', field: 'read_status' }
 }, {
+  tableName: 'messages',
   timestamps: false  // La tabla Messages no usa timestamps automáticos
 });
 
