@@ -88,7 +88,9 @@ const Message = sequelize.define('Message', {
   senderId: { type: DataTypes.STRING, allowNull: false },
   timestamp: { type: DataTypes.BIGINT, allowNull: false },
   // Estado de lectura: 'sent' (enviado), 'delivered' (entregado), 'read' (leído)
-  readStatus: { type: DataTypes.ENUM('sent', 'delivered', 'read'), defaultValue: 'sent' }
+  readStatus: { type: DataTypes.ENUM('sent', 'delivered', 'read'), defaultValue: 'sent', field: 'read_status' }
+}, {
+  timestamps: false  // La tabla Messages no usa timestamps automáticos
 });
 
 // Chats previos a formalizar (conversaciones iniciadas desde una oferta)
@@ -104,7 +106,7 @@ const Chat = sequelize.define('Chat', {
   professionalId: { type: DataTypes.STRING, allowNull: true, field: 'professional_id' }
 }, {
   tableName: 'chats',
-  underscored: true
+  timestamps: false  // La tabla chats no tiene created_at/updated_at
 });
 
 // ✅ CORRECCIÓN 6: Modelo de Reviews para calificaciones
@@ -193,11 +195,8 @@ Message.belongsTo(Reservation, { foreignKey: 'reservationId' }); // relación in
 Chat.hasMany(Message, { foreignKey: 'chatId', sourceKey: 'id' });
 Message.belongsTo(Chat, { foreignKey: 'chatId', targetKey: 'id' });
 
-// Relaciones entre Chat y User (profesional)
-Chat.belongsTo(User, { as: 'professionalUser', foreignKey: 'professionalId' });
-User.hasMany(Chat, { as: 'chatsAsProfessional', foreignKey: 'professionalId' });
-Chat.belongsTo(User, { as: 'clientUser', foreignKey: 'clientId' });
-User.hasMany(Chat, { as: 'chatsAsClient', foreignKey: 'clientId' });
+// NOTA: Chat no tiene FK reales a User en la BD (professional_id/client_id son TEXT sin constraints)
+// Las relaciones se manejan manualmente en el controlador
 
 // ✅ Relaciones para ProfessionalOffers
 User.hasMany(ProfessionalOffer, { as: 'offers', foreignKey: 'professionalId' });
