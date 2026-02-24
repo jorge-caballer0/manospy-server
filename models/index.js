@@ -86,8 +86,7 @@ const Message = sequelize.define('Message', {
   chatId: { type: DataTypes.STRING, allowNull: true, field: 'chat_id' }, // chat identifier when message is pre-reservation
   content: { type: DataTypes.TEXT, allowNull: false },
   senderId: { type: DataTypes.STRING, allowNull: false, field: 'sender_id' },
-  timestamp: { type: DataTypes.BIGINT, allowNull: false, field: 'timestamp' },
-  readStatus: { type: DataTypes.STRING, defaultValue: 'unread', field: 'read_status' }
+  timestamp: { type: DataTypes.BIGINT, allowNull: false, field: 'timestamp' }
 }, {
   tableName: 'messages',
   timestamps: false  // La tabla Messages no usa timestamps automáticos

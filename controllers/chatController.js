@@ -72,7 +72,7 @@ export async function listClientChats(req, res) {
     const userIdStr = String(rawUserId);
 
     const chats = await Chat.findAll({
-      where: Sequelize.where(Sequelize.cast(Sequelize.col('client_id'), 'text'), userIdStr),
+      where: Sequelize.where(Sequelize.col('client_id'), Op.eq, userIdStr),
       order: [['id', 'DESC']]  // No hay updatedAt en tabla chats
     });
 
@@ -120,9 +120,9 @@ export async function listAllConversations(req, res) {
 
     const userIdStr = String(rawUserId);
 
-    // Obtener chats pre-reserva del cliente
+    // Obtener chats pre-reserva del cliente - usar operador de comparación simple
     const chatsPreReserva = await Chat.findAll({
-      where: Sequelize.where(Sequelize.cast(Sequelize.col('client_id'), 'text'), userIdStr),
+      where: Sequelize.where(Sequelize.col('client_id'), Op.eq, userIdStr),
       order: [['id', 'DESC']]  // No hay updatedAt en tabla chats
     });
 
