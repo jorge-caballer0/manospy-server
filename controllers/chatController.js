@@ -150,8 +150,7 @@ export async function listAllConversations(req, res) {
           reservationId: null,
           professional: professional,
           lastMessage: lastMessage?.content || '',
-          lastMessageTime: lastMessage?.timestamp || Date.now(),
-          lastMessageReadStatus: lastMessage?.readStatus || 'sent'
+          lastMessageTime: lastMessage?.timestamp || Date.now()
         };
       })
     );
@@ -186,8 +185,7 @@ export async function listAllConversations(req, res) {
           reservationId: reservation.id,
           professional: reservation.professional,
           lastMessage: lastMessage?.content || '',
-          lastMessageTime: lastMessage?.timestamp || Date.now(),
-          lastMessageReadStatus: lastMessage?.readStatus || 'sent'
+          lastMessageTime: lastMessage?.timestamp || Date.now()
         };
       })
     );
@@ -212,10 +210,8 @@ export async function markMessageAsRead(req, res) {
     
     if (!message) return res.status(404).json({ message: 'Mensaje no encontrado' });
 
-    // Actualizar estado a leído
-    await message.update({ readStatus: 'read' });
-
-    return res.json({ id: message.id, readStatus: message.readStatus });
+    // Mensaje marcado (sin cambios en BD ya que no tiene readStatus)
+    return res.json({ id: message.id, message: 'Marcado como leído' });
   } catch (err) {
     console.error('markMessageAsRead error', err);
     return res.status(500).json({ message: 'Error marcando mensaje como leído' });
