@@ -188,10 +188,10 @@ Reservation.belongsTo(User, { as: 'client', foreignKey: 'clientId' });
 Reservation.belongsTo(User, { as: 'professional', foreignKey: 'professionalId' });
 
 Reservation.hasMany(Message, { foreignKey: 'reservationId' });
-Message.belongsTo(Reservation, { foreignKey: 'reservationId' }); // relación inversa
+Message.belongsTo(Reservation, { foreignKey: 'reservationId', constraints: false }); // relación inversa sin FK constraint
 // Asociaciones para chat
-Chat.hasMany(Message, { foreignKey: 'chatId', sourceKey: 'id' });
-Message.belongsTo(Chat, { foreignKey: 'chatId', targetKey: 'id' });
+Chat.hasMany(Message, { foreignKey: 'chatId', sourceKey: 'id', constraints: false });
+Message.belongsTo(Chat, { foreignKey: 'chatId', targetKey: 'id', constraints: false }); // Sin validación FK para evitar 500 en inserts
 
 // NOTA: Chat no tiene FK reales a User en la BD (professional_id/client_id son TEXT sin constraints)
 // Las relaciones se manejan manualmente en el controlador
